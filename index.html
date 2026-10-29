@@ -49,7 +49,7 @@ nav a.cta:hover{background:var(--accent-hover)}
 
 .hero{position:relative;isolation:isolate;min-height:640px;padding-block:112px 88px}
 .hero-art{position:absolute;top:0;bottom:0;left:calc(50% - 50vw);width:100vw;overflow:hidden;z-index:-1;pointer-events:none}
-.hero-art img{position:absolute;right:-8vw;top:50%;transform:translateY(-45%);width:max(1100px,78vw);height:auto;max-width:none}
+.hero-art img{position:absolute;left:62%;top:50%;transform:translate(-50%,-50%);width:clamp(900px,60vw,1150px);height:auto;max-width:none;-webkit-mask-image:radial-gradient(ellipse 52% 62% at 50% 46%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 52% 62% at 50% 46%,#000 50%,transparent 100%)}
 .hero-art::before,.hero-art::after{content:"";position:absolute;inset:0;z-index:1}
 .hero-art::before{background:linear-gradient(90deg,var(--bg) 0%,var(--bg) 22%,rgba(22,26,38,.82) 38%,rgba(22,26,38,0) 62%)}
 .hero-art::after{background:linear-gradient(0deg,var(--bg) 0%,rgba(22,26,38,.9) 14%,rgba(22,26,38,0) 40%)}
