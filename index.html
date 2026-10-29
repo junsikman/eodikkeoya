@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>어디꺼야?</title>
+<meta name="description" content="방송·유튜브에 나온 아이템, 어디 거인지 찾아드려요.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+/* Layout: 갤러리풍 다크 에디토리얼 — 큰 세리프 히어로(엇갈린 두 줄) + 반투명 검색 → 둘러보기 → 피드 / #admin */
+/* 차콜 단일 테마: 라이트/다크 설정과 관계없이 같은 색으로 보임 */
+:root{
+  --bg:#161A26; --bg-hi:#1D2231; --bg-lo:#10131C;
+  --surface:rgba(255,255,255,.07); --surface-solid:#1D2231; --surface-2:rgba(255,255,255,.12);
+  --ink:#F4EFE6; --muted:#C3C0CC; --line:rgba(255,255,255,.18);
+  --accent:#E8C18C; --accent-hover:#F3D4A6; --accent-ink:#161A26; --accent-soft:rgba(232,193,140,.16); --gold:#E8C18C; --ok:#9CCBA8;
+  color-scheme:dark;
+  --display:"Noto Serif KR",Georgia,serif;
+  --body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
+  --r:12px;
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);overflow-x:clip;color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg-lo)}
+.wrap{max-width:1180px;margin:0 auto}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+h1,h2,h3{text-wrap:balance;margin:0}
+
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(22,26,38,.8);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid transparent;
+  margin:0 calc(-1 * max(16px,env(safe-area-inset-right,0px))) 0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:16px;padding-block:22px}
+.logo{font-family:var(--display);font-size:24px;letter-spacing:.2px;text-decoration:none;font-weight:700}
+.logo b{font-weight:700}
+nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+nav a{text-decoration:none;font-weight:500;font-size:16px;padding:6px 12px;position:relative;border-radius:8px}
+nav a:hover{background:var(--surface)}
+nav a.adm{background:var(--accent-soft);border-radius:8px}
+nav a.cta{background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:999px;padding:6px 16px}
+nav a.cta:hover{background:var(--accent-hover)}
+.n{position:absolute;top:-4px;right:-6px;background:var(--accent);color:var(--accent-ink);font-family:var(--body);font-size:11px;font-weight:700;
+  min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 4px}
+
+.hero{position:relative;isolation:isolate;min-height:640px;padding-block:112px 88px}
+.hero-art{position:absolute;top:0;bottom:0;left:calc(50% - 50vw);width:100vw;overflow:hidden;z-index:-1;pointer-events:none}
+.hero-art img{position:absolute;right:-12%;top:0;height:100%;width:auto;max-width:none}
+.hero-art::before,.hero-art::after{content:"";position:absolute;inset:0;z-index:1}
+.hero-art::before{background:linear-gradient(90deg,var(--bg) 0%,var(--bg) 22%,rgba(22,26,38,.82) 38%,rgba(22,26,38,0) 62%)}
+.hero-art::after{background:linear-gradient(0deg,var(--bg) 0%,rgba(22,26,38,.9) 14%,rgba(22,26,38,0) 40%)}
+.hero-in{max-width:580px;display:grid;gap:22px}
+.hero .eyebrow{margin:0;font-size:16px;font-weight:500;letter-spacing:.2em;color:var(--accent)}
+.hero h1{font-family:var(--display);font-weight:700;font-size:4.5rem;line-height:1.1;letter-spacing:-.5px}
+.hero p.lead{margin:0;color:var(--muted);font-size:20px;line-height:1.6}
+.search{display:flex;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:999px;overflow:hidden;max-width:620px;backdrop-filter:blur(6px)}
+.search input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:17px;padding:15px 20px;color:var(--ink)}
+.search input::placeholder{color:var(--muted)}
+.search input:focus{outline:none}
+.search button{border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;padding:0 28px;margin:5px;border-radius:999px}
+.search button:hover{background:var(--accent-hover)}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 16px;font-size:15px}
+.chip:hover{background:var(--surface)}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+.browse{display:grid;gap:10px;margin-top:8px}
+.browse h2{font-family:var(--body);font-weight:500;font-size:13px;letter-spacing:.12em;color:var(--muted)}
+.cats{display:flex;flex-wrap:wrap;gap:8px}
+.cat{border:1px solid rgba(255,255,255,.22);background:rgba(22,26,38,.55);border-radius:999px;height:34px;padding:0 13px 0 10px;display:inline-flex;align-items:center;gap:6px;transition:background .2s}
+.cat:hover{background:var(--surface-2)}
+.cat svg{width:16px;height:16px;fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.cat svg .au{stroke:var(--gold)}
+.cat svg .auf{fill:var(--gold);stroke:none}
+.cat b{font-size:13px;font-weight:500}
+.cat small{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.cat[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.cat[aria-pressed="true"] svg{stroke:var(--accent-ink)}
+.cat[aria-pressed="true"] small{color:#555}
+
+section{padding-block:44px;border-top:1px solid var(--line)}
+.sh{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+.sh h2{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:-.2px}
+.sh p{margin:4px 0 0;color:var(--muted);font-size:16px}
+.more{font-size:15px;color:var(--muted);border:0;background:none;padding:0}
+.more:hover{color:var(--ink)}
+.rail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(260px,1fr);gap:18px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x mandatory}
+.rail>*{scroll-snap-align:start;min-width:0}
+.empty{color:var(--muted);font-size:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:0}
+
+.recent{padding-block:24px 30px}
+.recent .rail{grid-auto-columns:150px}
+.mini{border:0;background:none;padding:0;text-align:left;display:grid;gap:6px;min-width:0}
+.mini .th{border-radius:var(--r)}
+.mini b{font-size:14px;color:var(--muted);font-weight:500}
+.mini span{font-size:15px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.show{display:grid;gap:12px;border:0;background:none;padding:0;text-align:left;min-width:0}
+.poster{aspect-ratio:16/9;border-radius:var(--r);position:relative;overflow:hidden;display:flex;align-items:end;padding:16px;max-width:100%}
+.poster img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.poster .t{font-family:var(--display);font-size:24px;color:#fff;line-height:1.2;text-shadow:0 2px 14px rgba(0,0,0,.5);position:relative}
+.badge{position:absolute;top:12px;left:12px;display:flex;gap:6px;z-index:1}
+.badge i{font-style:normal;font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(20,20,20,.7);color:#fff;backdrop-filter:blur(4px)}
+.badge i.new{background:#F4F2EE;color:#1A1A1A}
+.show .meta{font-size:15px;color:var(--muted)}
+.show .meta strong{color:var(--ink);font-weight:700;display:block;font-size:17px}
+
+.people{display:flex;flex-wrap:wrap;gap:10px}
+.person{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 18px;font-size:17px;font-weight:700;display:flex;gap:10px;align-items:baseline}
+.person small{color:var(--muted);font-weight:500;font-size:14px;font-variant-numeric:tabular-nums}
+.person:hover{background:var(--surface-2)}
+
+.items{display:grid;grid-template-columns:repeat(4,1fr);gap:30px 18px}
+.item{border:0;background:none;padding:0;text-align:left;display:grid;gap:6px;align-content:start;min-width:0}
+.th{aspect-ratio:4/5;border-radius:var(--r);display:grid;place-items:center;max-width:100%;position:relative;overflow:hidden;transition:transform .35s;background:var(--surface-2)}
+.th svg{width:58%;height:58%}
+.th img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.item:hover .th{transform:scale(1.015)}
+.item .th{margin-bottom:6px}
+.item .br{font-size:14px;font-weight:700;color:var(--muted)}
+.item .nm{font-size:16px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item .pr{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.item .who{font-size:14px;color:var(--muted)}
+.full{grid-column:1/-1}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:1px 6px;border-radius:8px;border:1px solid var(--line);color:var(--muted);vertical-align:middle;letter-spacing:0;text-transform:none;font-family:var(--body)}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.ups{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+
+.req{background:var(--surface);border-radius:var(--r);padding:36px;display:grid;grid-template-columns:1fr 1.3fr;gap:32px;border:1px solid var(--line)}
+.req h2{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.3}
+.req p{color:var(--muted);margin:12px 0 0}
+form{display:grid;gap:12px;min-width:0}
+label{font-size:14px;font-weight:700;display:grid;gap:6px;min-width:0;color:var(--ink)}
+input,textarea,select{font:inherit;font-size:16px;color:var(--ink);background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:8px;padding:11px 12px;width:100%}
+input:focus,textarea:focus,select:focus{border-color:rgba(255,255,255,.5);outline:none}
+select option{background:var(--surface-solid);color:var(--ink)}
+input[type=file]{padding:8px}
+textarea{min-height:84px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.primary{background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:13px 28px;font-weight:700;justify-self:start;text-decoration:none;display:inline-block;backdrop-filter:blur(6px)}
+.primary:hover{background:var(--accent-hover)}
+.ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:15px}
+.ghost:hover{background:var(--surface)}
+.danger{color:#F0A8A0;border-color:rgba(240,168,160,.5)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note{font-size:13px;color:var(--muted);margin:0}
+
+footer{padding-block:44px 56px;color:var(--muted);font-size:14px;border-top:1px solid var(--line);margin-top:30px;display:grid;gap:6px}
+footer .logo{font-size:20px;color:var(--ink)}
+
+/* admin */
+.adm-head{padding-block:40px 8px;display:grid;gap:10px}
+.adm-head h1{font-family:var(--display);font-weight:700;font-size:42px}
+.adm-head p{margin:0;color:var(--muted)}
+.adm-tabs{display:flex;gap:8px;flex-wrap:wrap;padding-block:18px;position:relative}
+.adm-tabs .n{position:static;display:inline-grid;margin-left:6px}
+.panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:28px;padding-block:8px 40px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px;display:grid;gap:14px;min-width:0}
+.card h2{font-size:20px;font-weight:700}
+.alist{display:grid;gap:8px;min-width:0}
+.arow{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px}
+.arow .th,.arow .pv{width:56px;height:56px;aspect-ratio:auto;border-radius:8px}
+.pv{position:relative;overflow:hidden}
+.pv img{width:100%;height:100%;object-fit:cover}
+.arow b{display:block;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arow span{font-size:13px;color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rep{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:grid;gap:8px}
+.rep .top{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+.rep .top b{font-size:17px;font-weight:700}
+.rep .top span{color:var(--muted);font-size:14px}
+.rep p{margin:0}
+.curimg{display:flex;gap:10px;align-items:center}
+.curimg img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:50;display:grid;place-items:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.md{background:var(--surface-solid);border:1px solid var(--line);border-radius:var(--r);max-width:780px;width:100%;max-height:100%;overflow:auto;display:grid;grid-template-columns:1fr 1fr;position:relative}
+.md>.th{border-radius:var(--r) 0 0 var(--r);aspect-ratio:auto;min-height:360px}
+.md .bd{padding:32px 26px;display:grid;gap:12px;align-content:start;min-width:0}
+.md .br{font-size:15px;font-weight:700;color:var(--muted)}
+.md h3{font-size:24px;font-weight:700;line-height:1.35}
+.md .pr{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.md dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:15px}
+.md dt{color:var(--muted)}
+.md dd{margin:0}
+.scene{background:rgba(0,0,0,.25);border-radius:8px;padding:12px 14px;font-size:15px;margin:0}
+.x{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.45);color:#fff;font-size:22px;line-height:1;z-index:2}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--accent);color:var(--accent-ink);padding:12px 22px;border-radius:999px;font-weight:500;z-index:60;max-width:calc(100% - 32px);text-align:center}
+
+@media (max-width:900px){
+  .items{grid-template-columns:repeat(3,1fr)}
+  .req,.panel{grid-template-columns:1fr} .ups{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:759px){
+  .hero{min-height:0;padding-block:0 32px}
+  .hero-art{position:relative;left:auto;width:auto;height:340px;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px))) 4px;z-index:0}
+  .hero-art img{position:absolute;inset:0;right:auto;width:100%;height:100%;object-fit:cover;object-position:50% 35%;
+    -webkit-mask-image:radial-gradient(ellipse 72% 72% at 50% 45%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 72% 72% at 50% 45%,#000 50%,transparent 100%)}
+  .hero-art::before,.hero-art::after{display:none}
+  .hero-in{gap:16px}
+  .hero .eyebrow{font-size:13px}
+  .hero h1{font-size:3.25rem}
+  .hero p.lead{font-size:17px}
+}
+@media (max-width:560px){
+  body{font-size:16px}
+  .bar{padding-block:14px}
+  .items{grid-template-columns:repeat(2,1fr);gap:24px 12px} .ups{grid-template-columns:1fr}
+  nav a{padding:6px 8px;font-size:15px} .nav-hide{display:none}
+  .md{grid-template-columns:1fr} .md>.th{border-radius:var(--r) var(--r) 0 0;min-height:240px}
+  .row{grid-template-columns:1fr} .req{padding:22px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <a class="logo" href="#top">어디꺼<b>야?</b></a>
+    <nav>
+      <a href="#items">착장</a>
+      <a href="#people" class="nav-hide">인물</a>
+      <a href="#request" class="cta">제보</a>
+      <a href="#recent">최근 본<span class="n" id="recentCount" hidden>0</span></a>
+      <a href="#admin" class="adm" id="admLink" hidden>관리<span class="n" id="repCount" hidden>0</span></a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="site">
+  <div class="hero" id="top">
+    <div class="hero-art"><img src="meerkat.png" alt=""></div>
+    <div class="hero-in">
+    <p class="eyebrow">방송 · 유튜브 제품 정찰대</p>
+    <h1>어디꺼야?</h1>
+    <p class="lead">방송 나온 아이템, 궁금하면 저한테 말해요.<br>제가 찾아볼게요.</p>
+    <form class="search" id="searchForm" role="search">
+      <input id="q" type="search" placeholder="인물, 프로그램, 브랜드, 아이템 검색" aria-label="검색어">
+      <button type="submit">검색</button>
+    </form>
+    <div class="browse" id="cats">
+      <h2>둘러보기</h2>
+      <div class="cats" id="catList"></div>
+    </div>
+    </div>
+  </div>
+
+  <div class="recent" id="recent">
+    <div class="sh"><div><h2>최근 본 아이템</h2><p>이 브라우저에서 열어본 아이템이 모여요</p></div>
+      <button class="more" id="clearRecent" hidden>전체 지우기</button></div>
+    <div id="recentList"></div>
+  </div>
+
+  <section>
+    <div class="sh"><div><h2>새 회차 착장이 올라왔어요</h2><p>최근 착장이 추가된 프로그램</p></div></div>
+    <div id="newEps"></div>
+  </section>
+
+  <section id="people">
+    <div class="sh"><div><h2>인물로 찾기</h2><p>누가 입었는지 기억나면 바로</p></div></div>
+    <div class="people" id="peopleList"></div>
+  </section>
+
+  <section id="items">
+    <div class="sh"><div><h2 id="itemsTitle">새로 올라온 착장</h2><p id="itemsSub"></p></div>
+      <button class="more" id="resetFilter" hidden>필터 해제</button></div>
+    <div class="items" id="itemGrid"></div>
+  </section>
+
+  <section>
+    <div class="sh"><div><h2>최근 업데이트</h2><p id="upCount"></p></div></div>
+    <div class="tabs" id="platTabs"></div>
+    <div class="ups" id="ups"></div>
+  </section>
+
+  <section id="request" style="border-top:0">
+    <div class="req">
+      <div>
+        <h2>찾는 아이템이 없나요?</h2>
+        <p>프로그램, 회차, 인물, 장면을 알려주시면 확인해서 등록할게요. 보내주신 제보는 운영자만 볼 수 있어요.</p>
+      </div>
+      <form id="reqForm">
+        <div class="row">
+          <label for="rShow">프로그램<input id="rShow" required maxlength="80" placeholder="예: 봄날의 계약서"></label>
+          <label for="rEp">회차<input id="rEp" maxlength="30" placeholder="예: 7화"></label>
+        </div>
+        <div class="row">
+          <label for="rWho">인물<input id="rWho" maxlength="40" placeholder="예: 한서윤"></label>
+          <label for="rCat">종류<select id="rCat"></select></label>
+        </div>
+        <label for="rDesc">어떤 장면이었나요?<textarea id="rDesc" required maxlength="600" placeholder="예: 카페 장면에서 입은 베이지 니트 가디건"></textarea></label>
+        <label for="rLink">참고 링크 (선택)<input id="rLink" type="url" maxlength="400" placeholder="https://"></label>
+        <button class="primary" type="submit">제보하기</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<main class="wrap" id="admin" hidden>
+  <div class="adm-head">
+    <h1>관리자</h1>
+    <p>여기서 등록한 프로그램과 아이템이 사이트에 바로 보여요. 이 화면과 제보함은 관리자만 열 수 있어요.</p>
+  </div>
+  <div class="card" id="login" style="max-width:520px;margin-block:8px 48px" hidden>
+    <h2>관리자 로그인</h2>
+    <p class="note" style="font-size:15px">관리자 이메일을 넣으면 로그인 링크를 보내드려요. 메일에서 링크를 누르면 이 화면으로 돌아와요.</p>
+    <form id="loginForm">
+      <label for="loginEmail">이메일<input id="loginEmail" type="email" required autocomplete="email"></label>
+      <button class="primary" type="submit">로그인 링크 받기</button>
+    </form>
+    <p class="note" id="loginNote" role="status"></p>
+  </div>
+  <div id="admBody" hidden>
+  <div class="btns" style="justify-content:flex-end"><button class="ghost" type="button" id="logout">로그아웃</button></div>
+  <div class="adm-tabs" id="admTabs">
+    <button class="chip" data-tab="items" aria-pressed="true">아이템</button>
+    <button class="chip" data-tab="shows" aria-pressed="false">프로그램</button>
+    <button class="chip" data-tab="reports" aria-pressed="false">제보함<span class="n" id="repCount2" hidden>0</span></button>
+  </div>
+
+  <div class="panel" data-panel="items">
+    <div class="card">
+      <h2 id="iFormTitle">아이템 등록</h2>
+      <form id="iForm">
+        <div class="row">
+          <label for="iBrand">브랜드 *<input id="iBrand" required maxlength="60"></label>
+          <label for="iName">상품명 *<input id="iName" required maxlength="120"></label>
+        </div>
+        <div class="row">
+          <label for="iCat">분류 *<select id="iCat" required></select></label>
+          <label for="iPrice">가격 (원)<input id="iPrice" type="number" min="0" step="100" placeholder="모르면 비워두기"></label>
+        </div>
+        <div class="row">
+          <label for="iShow">프로그램 *<input id="iShow" required maxlength="80" list="showOptions" placeholder="입력하거나 목록에서 고르기"></label>
+          <label for="iPlat">플랫폼<select id="iPlat"></select></label>
+        </div>
+        <p class="note" id="iShowNote">처음 입력하는 프로그램은 저장할 때 자동으로 추가돼요.</p>
+        <div class="row">
+          <label for="iPerson">인물 *<input id="iPerson" required maxlength="40" list="personList"></label>
+          <label for="iEp">회차<input id="iEp" maxlength="30" placeholder="예: 12화"></label>
+        </div>
+        <label for="iScene">장면 설명<textarea id="iScene" maxlength="600" placeholder="어느 장면에서 어떻게 입었는지"></textarea></label>
+        <label for="iUrl">구매 링크<input id="iUrl" type="url" maxlength="600" placeholder="https://"></label>
+        <label for="iImg">상품 이미지<input id="iImg" type="file" accept="image/*"></label>
+        <div class="curimg" id="iCur" hidden></div>
+        <div class="btns">
+          <button class="primary" type="submit" id="iSubmit">등록하기</button>
+          <button class="ghost" type="button" id="iCancel" hidden>수정 취소</button>
+        </div>
+      </form>
+      <datalist id="personList"></datalist>
+      <datalist id="showOptions"></datalist>
+    </div>
+    <div class="alist" id="iList"></div>
+  </div>
+
+  <div class="panel" data-panel="shows" hidden>
+    <div class="card">
+      <h2 id="sFormTitle">프로그램 등록</h2>
+      <form id="sForm">
+        <label for="sTitle">프로그램명 *<input id="sTitle" required maxlength="80"></label>
+        <div class="row">
+          <label for="sPlat">플랫폼 *<select id="sPlat" required></select></label>
+          <label for="sEp">최신 회차<input id="sEp" maxlength="30" placeholder="예: 12화"></label>
+        </div>
+        <label for="sImg">포스터 이미지<input id="sImg" type="file" accept="image/*"></label>
+        <div class="curimg" id="sCur" hidden></div>
+        <div class="btns">
+          <button class="primary" type="submit" id="sSubmit">등록하기</button>
+          <button class="ghost" type="button" id="sCancel" hidden>수정 취소</button>
+        </div>
+      </form>
+    </div>
+    <div class="alist" id="sList"></div>
+  </div>
+
+  <div class="panel" data-panel="reports" hidden style="grid-template-columns:1fr">
+    <div class="alist" id="rList"></div>
+  </div>
+
+  </div>
+</main>
+
+<footer class="wrap">
+  <span class="logo">어디꺼<b>야?</b></span>
+  <span>아이템 정보는 방송 화면을 보고 찾은 것이라 틀릴 수 있어요. </span>
+  <span>어디꺼야?는 상품 판매의 당사자가 아니에요. · <a href="#admin">관리자</a></span>
+</footer>
+
+<div class="ov" id="ov" hidden></div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+</body>
+</html>
