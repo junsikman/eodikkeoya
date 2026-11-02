@@ -48,7 +48,7 @@ if (SUPABASE_URL && KEY) {
 const showOf = id => shows.find(s => s.id === id) || { title: "", platform: "" };
 
 // ---- 3) 아이템 페이지 ----
-const CSS = `:root{--bg:#161A26;--surface:#1D2231;--ink:#F4EFE6;--muted:#C3C0CC;--line:rgba(255,255,255,.18);--accent:#E8C18C;--accent-ink:#161A26}
+const CSS = `:root{--bg:#1A1613;--surface:#241E1A;--ink:#F4EFE6;--muted:#CFC7BE;--line:rgba(255,255,255,.18);--accent:#E8C18C;--accent-ink:#1A1613}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif}
 a{color:inherit}.wrap{max-width:960px;margin:0 auto;padding:0 16px}
 header{border-bottom:1px solid var(--line)}header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:16px}

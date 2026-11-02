@@ -22,10 +22,10 @@ html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}
 /* Layout: 갤러리풍 다크 에디토리얼 — 큰 세리프 히어로(엇갈린 두 줄) + 반투명 검색 → 둘러보기 → 피드 / #admin */
 /* 차콜 단일 테마: 라이트/다크 설정과 관계없이 같은 색으로 보임 */
 :root{
-  --bg:#161A26; --bg-hi:#1D2231; --bg-lo:#10131C;
-  --surface:rgba(255,255,255,.07); --surface-solid:#1D2231; --surface-2:rgba(255,255,255,.12);
-  --ink:#F4EFE6; --muted:#C3C0CC; --line:rgba(255,255,255,.18);
-  --accent:#E8C18C; --accent-hover:#F3D4A6; --accent-ink:#161A26; --accent-soft:rgba(232,193,140,.16); --gold:#E8C18C; --ok:#9CCBA8;
+  --bg:#1A1613; --bg-rgb:26,22,19; --bg-hi:#241E1A; --bg-lo:#120F0D;
+  --surface:rgba(255,255,255,.07); --surface-solid:#241E1A; --surface-2:rgba(255,255,255,.12);
+  --ink:#F4EFE6; --muted:#CFC7BE; --line:rgba(255,255,255,.18);
+  --accent:#E8C18C; --accent-hover:#F3D4A6; --accent-ink:#1A1613; --accent-soft:rgba(232,193,140,.16); --gold:#E8C18C; --ok:#9CCBA8;
   color-scheme:dark;
   --display:"Noto Serif KR",Georgia,serif;
   --body:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
@@ -42,7 +42,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
 h1,h2,h3{text-wrap:balance;margin:0}
 
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(22,26,38,.8);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid transparent;
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(var(--bg-rgb),.8);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid transparent;
   margin:0 calc(-1 * max(16px,env(safe-area-inset-right,0px))) 0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .bar{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:16px;padding-block:22px}
@@ -61,8 +61,8 @@ nav a.cta:hover{background:var(--accent-hover)}
 .hero-art{position:absolute;top:0;bottom:0;left:calc(50% - 50vw);width:100vw;overflow:hidden;z-index:-1;pointer-events:none}
 .hero-art img{position:absolute;left:62%;top:50%;transform:translate(-50%,-50%);width:clamp(900px,60vw,1150px);height:auto;max-width:none;-webkit-mask-image:radial-gradient(ellipse 52% 62% at 50% 46%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 52% 62% at 50% 46%,#000 50%,transparent 100%)}
 .hero-art::before,.hero-art::after{content:"";position:absolute;inset:0;z-index:1}
-.hero-art::before{background:linear-gradient(90deg,var(--bg) 0%,var(--bg) 22%,rgba(22,26,38,.82) 38%,rgba(22,26,38,0) 62%)}
-.hero-art::after{background:linear-gradient(0deg,var(--bg) 0%,rgba(22,26,38,.9) 14%,rgba(22,26,38,0) 40%)}
+.hero-art::before{background:linear-gradient(90deg,var(--bg) 0%,var(--bg) 22%,rgba(var(--bg-rgb),.82) 38%,rgba(var(--bg-rgb),0) 62%)}
+.hero-art::after{background:linear-gradient(0deg,var(--bg) 0%,rgba(var(--bg-rgb),.9) 14%,rgba(var(--bg-rgb),0) 40%)}
 .hero-in{max-width:580px;display:grid;gap:22px}
 .hero .eyebrow{margin:0;font-size:16px;font-weight:500;letter-spacing:.2em;color:var(--accent)}
 .hero h1{font-family:var(--display);font-weight:700;font-size:4.5rem;line-height:1.1;letter-spacing:-.5px}
@@ -80,7 +80,7 @@ nav a.cta:hover{background:var(--accent-hover)}
 .browse{display:grid;gap:10px;margin-top:8px}
 .browse h2{font-family:var(--body);font-weight:500;font-size:13px;letter-spacing:.12em;color:var(--muted)}
 .cats{display:flex;flex-wrap:wrap;gap:8px}
-.cat{border:1px solid rgba(255,255,255,.22);background:rgba(22,26,38,.55);border-radius:999px;height:34px;padding:0 13px 0 10px;display:inline-flex;align-items:center;gap:6px;transition:background .2s}
+.cat{border:1px solid rgba(255,255,255,.22);background:rgba(var(--bg-rgb),.55);border-radius:999px;height:34px;padding:0 13px 0 10px;display:inline-flex;align-items:center;gap:6px;transition:background .2s}
 .cat:hover{background:var(--surface-2)}
 .cat svg{width:16px;height:16px;fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
 .cat svg .au{stroke:var(--gold)}
