@@ -105,7 +105,7 @@ function thumb(it,cls=""){
 }
 function poster(s,badges){
   const c=colorOf(s);
-  return `<div class="poster" style="background:linear-gradient(135deg,${c},${shade(c,-70)})">${okUrl(s.posterUrl)?`<img src="${esc(s.posterUrl)}" alt="" loading="lazy">`:""}
+  return `<div class="poster" style="background:linear-gradient(135deg,${c},${shade(c,-70)})">${okUrl(s.posterUrl)?`<img class="pbg" src="${esc(s.posterUrl)}" alt="" loading="lazy" aria-hidden="true"><img class="pfg" src="${esc(s.posterUrl)}" alt="${esc(s.title)} 포스터" loading="lazy">`:""}
   <div class="badge">${badges}</div>${okUrl(s.posterUrl)?"":`<span class="t">${esc(s.title)}</span>`}</div>`;
 }
 const sampleTag=x=>x.sample?' <span class="tag">예시</span>':"";

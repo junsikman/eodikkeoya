@@ -110,7 +110,10 @@ section{padding-block:44px;border-top:1px solid var(--line)}
 
 .show{display:grid;gap:12px;border:0;background:none;padding:0;text-align:left;min-width:0}
 .poster{aspect-ratio:16/9;border-radius:var(--r);position:relative;overflow:hidden;display:flex;align-items:end;padding:16px;max-width:100%}
-.poster img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.poster img{position:absolute;inset:0;width:100%;height:100%}
+/* 포스터는 잘리지 않게 전체를 보여주고, 남는 칸은 같은 이미지를 흐리게 깔아 채워요 */
+.poster img.pbg{object-fit:cover;filter:blur(18px) brightness(.55);transform:scale(1.2)}
+.poster img.pfg{object-fit:contain}
 .poster .t{font-family:var(--display);font-size:24px;color:#fff;line-height:1.2;text-shadow:0 2px 14px rgba(0,0,0,.5);position:relative}
 .badge{position:absolute;top:12px;left:12px;display:flex;gap:6px;z-index:1}
 .badge i{font-style:normal;font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(20,20,20,.7);color:#fff;backdrop-filter:blur(4px)}
