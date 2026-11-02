@@ -128,6 +128,19 @@ section{padding-block:44px;border-top:1px solid var(--line)}
 .pr .off{color:var(--accent)}
 .warn{font-style:normal;color:#F0A8A0}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.vf{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;vertical-align:middle;letter-spacing:0;border:1px solid var(--line);color:var(--muted)}
+.vf-official{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.vf-similar{border-color:var(--accent);color:var(--accent)}
+.buys{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.buys a{text-decoration:none}
+.buys .aff{font-size:11px;font-weight:500;opacity:.8}
+fieldset.links{border:1px solid var(--line);border-radius:8px;padding:12px;margin:0;display:grid;gap:8px;min-width:0}
+fieldset.links legend{font-size:14px;font-weight:700;padding:0 4px}
+.lrow{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) auto auto;gap:8px;align-items:center}
+.laff{display:flex;gap:6px;align-items:center;font-size:14px;white-space:nowrap}
+.laff input{width:auto}
+#iAddLink{justify-self:start}
+@media (max-width:560px){.lrow{grid-template-columns:1fr auto auto}.lrow .lurl{grid-column:1/-1;grid-row:2}}
 .item .who{font-size:14px;color:var(--muted)}
 .full{grid-column:1/-1}
 .tag{display:inline-block;font-size:11px;font-weight:500;padding:1px 6px;border-radius:8px;border:1px solid var(--line);color:var(--muted);vertical-align:middle;letter-spacing:0;text-transform:none;font-family:var(--body)}
@@ -336,6 +349,7 @@ footer .logo{font-size:20px;color:var(--ink)}
   <div class="adm-tabs" id="admTabs">
     <button class="chip" data-tab="items" aria-pressed="true">아이템</button>
     <button class="chip" data-tab="shows" aria-pressed="false">프로그램</button>
+    <button class="chip" data-tab="people" aria-pressed="false">인물</button>
     <button class="chip" data-tab="reports" aria-pressed="false">제보함<span class="n" id="repCount2" hidden>0</span></button>
   </div>
 
@@ -356,12 +370,24 @@ footer .logo{font-size:20px;color:var(--ink)}
           <label for="iPlat">플랫폼<select id="iPlat"></select></label>
         </div>
         <p class="note" id="iShowNote">처음 입력하는 프로그램은 저장할 때 자동으로 추가돼요.</p>
+        <label for="iPerson">인물 *<input id="iPerson" required maxlength="40" list="personList" placeholder="목록에서 고르거나 새 이름 입력"></label>
+        <p class="note" id="iPersonNote">목록에서 고르거나 새 이름을 쓰면 인물로 추가돼요.</p>
         <div class="row">
-          <label for="iPerson">인물 *<input id="iPerson" required maxlength="40" list="personList"></label>
           <label for="iEp">회차<input id="iEp" maxlength="30" placeholder="예: 12화"></label>
+          <label for="iTime">장면 시간<input id="iTime" maxlength="20" placeholder="예: 23:10"></label>
         </div>
+        <label for="iVerify">확인 상태 *<select id="iVerify" required>
+          <option value="official">정품 확인 — 같은 제품이 확실해요</option>
+          <option value="similar">유사품 — 비슷한 제품을 찾았어요</option>
+          <option value="guess" selected>추정 — 확인 중이에요</option>
+        </select></label>
         <label for="iScene">장면 설명<textarea id="iScene" maxlength="600" placeholder="어느 장면에서 어떻게 입었는지"></textarea></label>
-        <label for="iUrl">구매 링크<input id="iUrl" type="url" maxlength="600" placeholder="https://"></label>
+        <label for="iUrl">대표 구매 링크 (W컨셉이면 가격을 매일 자동 확인해요)<input id="iUrl" type="url" maxlength="600" placeholder="https://"></label>
+        <label class="laff" style="font-weight:500"><input type="checkbox" id="iAff"> 대표 링크가 제휴 링크예요</label>
+        <fieldset class="links"><legend>다른 구매처 (최대 5개)</legend>
+          <div id="iLinks"></div>
+          <button type="button" class="ghost" id="iAddLink">구매처 추가</button>
+        </fieldset>
         <label for="iImg">상품 이미지<input id="iImg" type="file" accept="image/*"></label>
         <div class="curimg" id="iCur" hidden></div>
         <div class="btns">
@@ -393,6 +419,11 @@ footer .logo{font-size:20px;color:var(--ink)}
       </form>
     </div>
     <div class="alist" id="sList"></div>
+  </div>
+
+  <div class="panel" data-panel="people" hidden style="grid-template-columns:1fr">
+    <p class="note" style="font-size:15px;margin:0">이름을 고치면 그 인물의 아이템이 모두 함께 바뀌어요. 이미 있는 이름으로 고치면 두 인물이 하나로 합쳐져요.</p>
+    <div class="alist" id="pList"></div>
   </div>
 
   <div class="panel" data-panel="reports" hidden style="grid-template-columns:1fr">

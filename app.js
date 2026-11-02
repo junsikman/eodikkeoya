@@ -55,8 +55,21 @@ const md=iso=>{const d=new Date(iso);return isNaN(d)?"":`${d.getMonth()+1}월 ${
 const SUPABASE_URL="https://zsguwckfbnglcwubmsor.supabase.co";
 const SUPABASE_KEY="sb_publishable_sgNoVED5UXmYv85QtPZSlA_L8XzIpay";
 const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:"pkce",detectSessionInUrl:true,persistSession:true}}):null;
-const S={items:[],shows:[],reports:[],itemsOk:false,showsOk:false,owner:false,noDb:false};
-const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,showId:r.show_id,ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
+const S={items:[],shows:[],reports:[],people:[],itemsOk:false,showsOk:false,owner:false,noDb:false};
+const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,personId:r.person_id,verify:r.verify||"guess",sceneTime:r.scene_time||"",links:Array.isArray(r.links)?r.links:[],buyAffiliate:!!r.buy_affiliate,showId:r.show_id,ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
+const toPerson=r=>({id:r.id,name:r.name});
+const VERIFY={official:"정품 확인",similar:"유사품",guess:"추정"};
+const SHOPS=[[/wconcept\.co\.kr$/,"W컨셉"],[/musinsa\.com$/,"무신사"],[/29cm\.co\.kr$/,"29CM"],[/coupang\.com$/,"쿠팡"],[/(smartstore|brand|shopping)\.naver\.com$/,"네이버"],[/zigzag\.kr$/,"지그재그"],[/a-bly\.com$/,"에이블리"],[/kream\.co\.kr$/,"KREAM"],[/ssg\.com$/,"SSG"],[/lotteon\.com$/,"롯데온"],[/hago\.kr$/,"하고"],[/wadiz\.kr$/,"와디즈"]];
+function shopName(url){try{const h=new URL(url).hostname.replace(/^(www|m)\./,"");const f=SHOPS.find(([re])=>re.test(h));return f?f[1]:h}catch(e){return "구매처"}}
+const httpUrl=u=>typeof u==="string"&&/^https?:\/\//i.test(u);
+function buyLinks(it){
+  const out=[];
+  if(httpUrl(it.buyUrl))out.push({shop:shopName(it.buyUrl),url:it.buyUrl,aff:it.buyAffiliate,main:true});
+  for(const l of it.links||[])if(l&&httpUrl(l.url))out.push({shop:(l.shop||"").trim()||shopName(l.url),url:l.url,aff:!!l.aff});
+  return out;
+}
+const vfTag=it=>`<span class="vf vf-${esc(it.verify)}">${VERIFY[it.verify]||"추정"}</span>`;
+const sceneText=it=>[it.ep,it.sceneTime].filter(Boolean).join(" ");
 const toShow=r=>({id:r.id,title:r.title,platform:r.platform,ep:r.ep,posterUrl:r.poster_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toReport=r=>({id:r.id,show:r.show,ep:r.ep,who:r.who,cat:r.cat,desc:r.descr,link:r.link,at:r.created_at});
 let F={q:"",cat:"",show:"",person:""}, plat="전체", tab="items";
@@ -100,7 +113,7 @@ function renderPeople(){
   const list=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
   $("#peopleList").innerHTML=!S.itemsOk?"":list.length?list.map(([n,c])=>`<button class="person" data-person="${esc(n)}">${esc(n)}<small>${c}</small></button>`).join("")
    :`<p class="empty">아이템이 등록되면 인물이 여기에 모여요.</p>`;
-  $("#personList").innerHTML=list.map(([n])=>`<option value="${esc(n)}">`).join("");
+  $("#personList").innerHTML=(S.peopleOk?S.people.map(p=>p.name):list.map(([n])=>n)).map(n=>`<option value="${esc(n)}">`).join("");
 }
 function renderItems(){
   const words=F.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -119,7 +132,7 @@ function renderItems(){
   if(!S.itemsOk&&!S.noDb){$("#itemGrid").innerHTML="";return}
   $("#itemGrid").innerHTML=S.noDb?`<p class="empty full">착장 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>`
    :list.length?list.map(it=>`<button class="item" data-id="${esc(it.id)}">${thumb(it)}
-   <span class="br">${esc(it.brand)}${sampleTag(it)}</span><span class="nm">${esc(it.name)}</span><span class="pr">${priceHtml(it)}</span>
+   <span class="br">${esc(it.brand)}${sampleTag(it)} ${vfTag(it)}</span><span class="nm">${esc(it.name)}</span><span class="pr">${priceHtml(it)}</span>
    <span class="who">${esc(it.person)} · ${esc(showOf(it.showId).title)}</span></button>`).join("")
    :`<p class="empty full">${S.items.length?"조건에 맞는 착장이 아직 없어요. 아래에서 제보해 주시면 확인해서 올려둘게요.":"아직 등록된 착장이 없어요."}</p>`;
 }
@@ -144,10 +157,11 @@ function openItem(id){
   $("#ov").innerHTML=`<div class="md" role="dialog" aria-modal="true" aria-label="${esc(it.name)}">
    <button class="x" id="close" aria-label="닫기">×</button>${thumb(it)}
    <div class="bd"><span class="br">${esc(it.brand)}${sampleTag(it)}</span><h3>${esc(it.name)}</h3><span class="pr">${priceHtml(it)}</span>${hasNum(it.couponPrice)?`<span class="note">쿠폰 적용 시 최대 ${won(it.couponPrice)}</span>`:""}<span class="note">${priceNote(it)}</span>
-   <dl><dt>인물</dt><dd>${esc(it.person)}</dd><dt>프로그램</dt><dd>${esc(s.title)}${it.ep?" · "+esc(it.ep):""}</dd>
+   <dl><dt>확인</dt><dd>${vfTag(it)}</dd><dt>인물</dt><dd>${esc(it.person)}</dd><dt>프로그램</dt><dd>${esc(s.title)}${sceneText(it)?" · "+esc(sceneText(it)):""}</dd>
    ${s.platform?`<dt>플랫폼</dt><dd>${esc(s.platform)}</dd>`:""}<dt>분류</dt><dd>${CATS[it.cat]||""}</dd></dl>
    ${it.scene?`<p class="scene">${esc(it.scene)}</p>`:""}
-   ${okUrl(it.buyUrl)&&/^https?:/i.test(it.buyUrl)?`<a class="primary" href="${esc(it.buyUrl)}" target="_blank" rel="noopener noreferrer">구매처 보기</a>`:`<p class="note">구매처 정보가 아직 없어요.</p>`}
+   ${(()=>{const ls=buyLinks(it);if(!ls.length)return `<p class="note">구매처 정보가 아직 없어요.</p>`;
+     return `<div class="buys">${ls.map(l=>`<a class="${l.main?"primary":"ghost"}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer${l.aff?" sponsored":""}">${esc(l.shop)}에서 보기${l.aff?' <small class="aff">제휴</small>':""}</a>`).join("")}</div>${ls.some(l=>l.aff)?`<p class="note">‘제휴’ 링크로 구매하면 어디꺼야?가 수수료를 받을 수 있어요.</p>`:""}`})()}
    ${same.length?`<div><b style="font-size:15px">${esc(it.person)}의 다른 착장</b><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">${same.map(x=>`<button class="mini" data-id="${esc(x.id)}">${thumb(x)}<span style="font-size:13px">${esc(x.name)}</span></button>`).join("")}</div></div>`:""}
    </div></div>`;
   $("#ov").hidden=false;$("#close").focus();document.body.style.overflow="hidden";
@@ -159,9 +173,10 @@ function go(){document.getElementById("items").scrollIntoView({behavior:"smooth"
 /* ---------- data ---------- */
 async function loadData(){
   if(!sb){S.noDb=true;renderSite();return}
-  const [a,b]=await Promise.all([sb.from("items").select("*"),sb.from("shows").select("*")]);
+  const [a,b,c]=await Promise.all([sb.from("items").select("*"),sb.from("shows").select("*"),sb.from("people").select("id,name").order("name")]);
   if(a.error||b.error){S.noDb=true;renderSite();return}
   S.noDb=false;S.items=a.data.map(toItem);S.shows=b.data.map(toShow);S.itemsOk=S.showsOk=true;
+  S.people=c.error?[]:c.data.map(toPerson);S.peopleOk=!c.error;
   renderSite();
   if(S.owner){await loadReports();renderAdmin()}
 }
@@ -203,12 +218,44 @@ function syncShowNote(){
   else{$("#iPlat").disabled=false;$("#iShowNote").textContent=t?"새 프로그램이에요. 플랫폼을 고르면 저장할 때 함께 추가돼요.":"처음 입력하는 프로그램은 저장할 때 자동으로 추가돼요."}
 }
 $("#iShow").addEventListener("input",syncShowNote);
+const findPerson=n=>S.people.find(p=>norm(p.name)===norm(n));
+function syncPersonNote(){
+  const t=$("#iPerson").value.trim(),p=t&&findPerson(t);
+  $("#iPersonNote").textContent=!t?"목록에서 고르거나 새 이름을 쓰면 인물로 추가돼요.":p?(p.name===t?"등록된 인물이에요.":`‘${p.name}’(으)로 저장돼요.`):"새 인물로 추가돼요.";
+}
+$("#iPerson").addEventListener("input",syncPersonNote);
+async function ensurePerson(name){
+  const p=findPerson(name);if(p)return p;
+  const r=await sb.from("people").insert({name}).select("id,name").single();
+  if(r.error){
+    if(/relation|does not exist|schema cache/i.test(r.error.message||""))throw new Error("SQL_PEOPLE");
+    const again=await sb.from("people").select("id,name").eq("name_key",norm(name)).maybeSingle();
+    if(again.data)return toPerson(again.data);
+    throw r.error;
+  }
+  const np=toPerson(r.data);S.people.push(np);return np;
+}
+/* 추가 구매처 줄 */
+function linkRow(l={}){
+  const d=document.createElement("div");d.className="lrow";
+  d.innerHTML=`<input class="lshop" maxlength="20" placeholder="쇼핑몰" aria-label="쇼핑몰 이름" value="${esc(l.shop||"")}">
+   <input class="lurl" type="url" maxlength="600" placeholder="https://" aria-label="구매 링크" value="${esc(l.url||"")}">
+   <label class="laff"><input type="checkbox" class="lafc"${l.aff?" checked":""}> 제휴</label>
+   <button type="button" class="ghost lrm" aria-label="이 구매처 빼기">빼기</button>`;
+  return d;
+}
+function setLinks(ls){const box=$("#iLinks");box.innerHTML="";(ls||[]).forEach(l=>box.appendChild(linkRow(l)));$("#iAddLink").hidden=box.children.length>=5}
+function readLinks(){
+  return $$("#iLinks .lrow").map(r=>({shop:r.querySelector(".lshop").value.trim(),url:r.querySelector(".lurl").value.trim(),aff:r.querySelector(".lafc").checked})).filter(l=>l.url);
+}
+$("#iAddLink").addEventListener("click",()=>{$("#iLinks").appendChild(linkRow());$("#iAddLink").hidden=$("#iLinks").children.length>=5;$("#iLinks").lastElementChild.querySelector(".lurl").focus()});
+$("#iLinks").addEventListener("click",e=>{const b=e.target.closest(".lrm");if(!b)return;b.closest(".lrow").remove();$("#iAddLink").hidden=false});
 let editI=null,editS=null,iImg=null,sImg=null,armed=null;
 function curImg(box,url,which){
   if(!okUrl(url)){$(box).hidden=true;$(box).innerHTML="";return}
   $(box).hidden=false;$(box).innerHTML=`<img src="${esc(url)}" alt=""><span class="note">현재 이미지</span><button type="button" class="ghost" data-rmimg="${which}">이미지 빼기</button>`;
 }
-function delBtn(kind,id){return `<button class="ghost danger" data-del="${kind}:${esc(id)}">${armed===kind+":"+id?"정말 삭제":"삭제"}</button>`}
+function delBtn(kind,id){return `<button type="button" class="ghost danger" data-del="${kind}:${esc(id)}">${armed===kind+":"+id?"정말 삭제":"삭제"}</button>`}
 function renderAdmin(){
   if(!S.owner)return;
   $$("#admTabs [data-tab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.tab===tab));
@@ -222,6 +269,12 @@ function renderAdmin(){
     <div style="min-width:0"><b>${esc(s.title)}</b><span>${esc(s.platform)} · ${esc(s.ep||"회차 없음")} · 아이템 ${countFor(s.id)}개</span></div>
     <div class="btns"><button class="ghost" data-edit="show:${esc(s.id)}">수정</button>${delBtn("show",s.id)}</div></div>`).join("")
     :`<p class="empty">등록된 프로그램이 없어요. 아이템을 올리면서 새 프로그램 이름을 쓰면 자동으로 추가돼요.</p>`;
+  const pc={};S.items.forEach(i=>{const k=i.personId||("n:"+norm(i.person));pc[k]=(pc[k]||0)+1});
+  $("#pList").innerHTML=!S.peopleOk?`<p class="empty">인물 목록을 쓰려면 수파베이스에서 004 SQL을 먼저 실행해 주세요.</p>`
+    :S.people.length?S.people.map(p=>`<form class="arow prow" data-pid="${esc(p.id)}" style="grid-template-columns:minmax(0,1fr) auto auto">
+    <label style="min-width:0"><span class="note">아이템 ${pc[p.id]||0}개</span><input class="pname" value="${esc(p.name)}" maxlength="40" aria-label="인물 이름"></label>
+    <button class="ghost" type="submit">이름 저장</button>${pc[p.id]?"":delBtn("person",p.id)}</form>`).join("")
+    :`<p class="empty">아직 등록된 인물이 없어요. 아이템을 등록하면 인물이 여기에 모여요.</p>`;
   $("#rList").innerHTML=S.reports.length?S.reports.map(r=>`<div class="rep">
     <div class="top"><b>${esc(r.show)}</b><span>${esc(r.ep||"")}${r.who?" · "+esc(r.who):""}${r.cat?" · "+esc(r.cat):""} · ${md(r.at)}</span></div>
     <p>${esc(r.desc)}</p>
@@ -232,10 +285,24 @@ function renderAdmin(){
   const n=S.reports.length;
   ["#repCount","#repCount2"].forEach(s=>{$(s).hidden=!n;$(s).textContent=n});
 }
-function resetIForm(){editI=null;iImg=null;$("#iForm").reset();curImg("#iCur");$("#iFormTitle").textContent="아이템 등록";$("#iSubmit").textContent="등록하기";$("#iCancel").hidden=true;renderShowSelect()}
+function resetIForm(){editI=null;iImg=null;$("#iForm").reset();setLinks([]);syncPersonNote();curImg("#iCur");$("#iFormTitle").textContent="아이템 등록";$("#iSubmit").textContent="등록하기";$("#iCancel").hidden=true;renderShowSelect()}
 function resetSForm(){editS=null;sImg=null;$("#sForm").reset();curImg("#sCur");$("#sFormTitle").textContent="프로그램 등록";$("#sSubmit").textContent="등록하기";$("#sCancel").hidden=true}
+async function shrink(f){
+  // 큰 사진은 올리기 전에 가로세로 최대 1200px, webp로 줄여요
+  if(!/^image\/(jpeg|png|webp|heic|heif|avif)$/i.test(f.type||""))return f;
+  try{
+    const bmp=await createImageBitmap(f);
+    const k=Math.min(1,1200/Math.max(bmp.width,bmp.height));
+    const w=Math.round(bmp.width*k),h=Math.round(bmp.height*k);
+    const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(bmp,0,0,w,h);
+    const blob=await new Promise(r=>c.toBlob(r,"image/webp",.82));
+    if(!blob||blob.type!=="image/webp"||(k===1&&blob.size>=f.size))return f;
+    return new File([blob],f.name.replace(/\.[^.]+$/,"")+".webp",{type:"image/webp"});
+  }catch(e){return f}
+}
 async function upload(input){
-  const f=input.files&&input.files[0];if(!f)return null;
+  let f=input.files&&input.files[0];if(!f)return null;
+  f=await shrink(f);
   const ext=((f.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,""))||"jpg";
   const path=`${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}.${ext}`;
   const {error}=await sb.storage.from("images").upload(path,f,{contentType:f.type||undefined,upsert:false});
@@ -259,14 +326,17 @@ $("#iForm").addEventListener("submit",async e=>{
       const r=must(await sb.from("shows").insert({title,platform:$("#iPlat").value,ep}).select().single());
       show={id:r.data.id};made=true;
     }
+    const person=await ensurePerson($("#iPerson").value.trim());
     const doc={brand:$("#iBrand").value.trim(),name:$("#iName").value.trim(),cat:$("#iCat").value,price,
-      person:$("#iPerson").value.trim(),show_id:show.id,ep,scene:$("#iScene").value.trim(),
-      buy_url:$("#iUrl").value.trim(),image_url:up||(iImg===false?"":(prev.imageUrl||"")),updated_at:now};
+      person:person.name,person_id:person.id,verify:$("#iVerify").value,scene_time:$("#iTime").value.trim(),
+      show_id:show.id,ep,scene:$("#iScene").value.trim(),
+      buy_url:$("#iUrl").value.trim(),buy_affiliate:$("#iAff").checked,links:readLinks(),
+      image_url:up||(iImg===false?"":(prev.imageUrl||"")),updated_at:now};
     if(editI)must(await sb.from("items").update(doc).eq("id",editI));else must(await sb.from("items").insert(doc));
     if(!made&&!editI)must(await sb.from("shows").update({updated_at:now,...(ep?{ep}:{})}).eq("id",show.id));
     toast((editI?"아이템을 수정했어요":"아이템을 등록했어요")+(made?` · ‘${title}’ 프로그램도 추가했어요`:""));resetIForm();
     await loadData();
-  }catch(err){dbErr(err)}
+  }catch(err){err&&err.message==="SQL_PEOPLE"?toast("수파베이스에서 004 SQL을 먼저 실행해 주세요"):dbErr(err)}
   btn.disabled=false;
 });
 $("#sForm").addEventListener("submit",async e=>{
@@ -285,6 +355,26 @@ $("#sForm").addEventListener("submit",async e=>{
   btn.disabled=false;
 });
 $("#iCancel").addEventListener("click",resetIForm);
+$("#pList").addEventListener("submit",async e=>{
+  const f=e.target.closest(".prow");if(!f)return;e.preventDefault();
+  const id=f.dataset.pid,name=f.querySelector(".pname").value.trim(),cur=S.people.find(p=>p.id===id);
+  if(!cur||!name||name===cur.name)return;
+  const btn=f.querySelector("button[type=submit]");btn.disabled=true;
+  try{
+    const other=S.people.find(p=>p.id!==id&&norm(p.name)===norm(name));
+    if(other){ // 같은 사람: 아이템을 옮기고 합치기
+      must(await sb.from("items").update({person_id:other.id,person:other.name}).eq("person_id",id));
+      must(await sb.from("people").delete().eq("id",id));
+      toast(`‘${cur.name}’을(를) ‘${other.name}’(으)로 합쳤어요`);
+    }else{
+      must(await sb.from("people").update({name}).eq("id",id));
+      must(await sb.from("items").update({person:name}).eq("person_id",id));
+      toast("이름을 바꿨어요");
+    }
+    await loadData();
+  }catch(err){dbErr(err)}
+  btn.disabled=false;
+});
 $("#sCancel").addEventListener("click",resetSForm);
 
 function fillItem(it){
@@ -292,7 +382,7 @@ function fillItem(it){
   $("#iBrand").value=it.brand||"";$("#iName").value=it.name||"";$("#iCat").value=it.cat||"top";
   $("#iPrice").value=typeof it.price==="number"?it.price:"";$("#iPerson").value=it.person||"";
   $("#iShow").value=S.shows.find(s=>s.id===it.showId)?.title||"";syncShowNote();
-  $("#iEp").value=it.ep||"";$("#iScene").value=it.scene||"";$("#iUrl").value=it.buyUrl||"";
+  $("#iEp").value=it.ep||"";$("#iTime").value=it.sceneTime||"";$("#iVerify").value=it.verify||"guess";$("#iScene").value=it.scene||"";$("#iUrl").value=it.buyUrl||"";$("#iAff").checked=!!it.buyAffiliate;setLinks(it.links);syncPersonNote();
   $("#iImg").value="";curImg("#iCur",it.imageUrl,"i");
   $("#iFormTitle").textContent="아이템 수정";$("#iSubmit").textContent="수정 저장";$("#iCancel").hidden=false;
   $("#iForm").scrollIntoView({behavior:"smooth",block:"start"});
@@ -380,7 +470,7 @@ document.addEventListener("click",async e=>{
     if(armed!==key){armed=key;renderAdmin();return}
     armed=null;
     if(k==="show"&&countFor(id)){toast(`이 프로그램에 아이템 ${countFor(id)}개가 있어요. 아이템을 먼저 지워 주세요`);renderAdmin();return}
-    try{must(await sb.from(k==="item"?"items":"shows").delete().eq("id",id));toast("삭제했어요");
+    try{must(await sb.from(k==="item"?"items":k==="person"?"people":"shows").delete().eq("id",id));toast("삭제했어요");
       if(k==="item"&&editI===id)resetIForm();if(k==="show"&&editS===id)resetSForm();await loadData()}catch(err){dbErr(err)}
     return}
   if(b.dataset.fromrep){const r=S.reports.find(x=>x.id===b.dataset.fromrep);if(!r)return;
