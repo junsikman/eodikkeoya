@@ -76,8 +76,11 @@ function itemPage(it, others) {
   const links = [];
   if (httpUrl(it.buy_url)) links.push({ shop: shopName(it.buy_url), url: it.buy_url, aff: !!it.buy_affiliate, main: true });
   for (const l of Array.isArray(it.links) ? it.links : []) if (l && httpUrl(l.url)) links.push({ shop: (l.shop || "").trim() || shopName(l.url), url: l.url, aff: !!l.aff });
-  const title = `${it.person} ${it.name}${scene ? ` | ${scene} 착장` : ""} - 어디꺼야?`;
-  const desc = `${scene ? scene + " " : ""}${it.person} 착용 ${it.brand} ${it.name}.${it.price ? ` 가격 ${won(it.price)}.` : ""}${links.length ? ` 구매처: ${[...new Set(links.map(l => l.shop))].join(", ")}.` : ""}`;
+  // 사람들이 실제로 치는 말: "프로그램 인물 분류" (예: 언니네 산지직송3 염정아 모자)
+  const cat = CATS[it.cat] || "";
+  const kw = [s.title, it.person, cat].filter(Boolean).join(" ");
+  const title = `${kw} - ${it.brand} ${it.name} | 어디꺼야?`;
+  const desc = `${[scene, it.person].filter(Boolean).join(" ")} ${cat} 정보: ${it.brand} ${it.name}.${it.price ? ` 가격 ${won(it.price)}.` : ""}${links.length ? ` 구매처: ${[...new Set(links.map(l => l.shop))].join(", ")}.` : ""}`;
   const image = httpUrl(it.image_url) ? it.image_url : `${BASE}/og-default.jpg`;
   const ld = {
     "@context": "https://schema.org", "@type": "Product", name: it.name, brand: { "@type": "Brand", name: it.brand },
@@ -95,7 +98,7 @@ function itemPage(it, others) {
 <link rel="icon" href="${BASE}/favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="product">
 <meta property="og:site_name" content="어디꺼야?">
-<meta property="og:title" content="${esc(`${it.person} · ${it.brand} ${it.name}`)}">
+<meta property="og:title" content="${esc(`${kw} - ${it.brand} ${it.name}`)}">
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:image" content="${esc(image)}">
 <meta property="og:url" content="${url}">
@@ -110,6 +113,7 @@ function itemPage(it, others) {
   <div>
     <div class="br">${esc(it.brand)} <span class="vf vf-${esc(it.verify || "guess")}">${VERIFY[it.verify] || "추정"}</span></div>
     <h1>${esc(it.name)}</h1>
+    <p class="note">${esc([scene, it.person].filter(Boolean).join(" "))} ${esc(cat)} 정보</p>
     ${it.price ? `<div class="pr">${off ? `<s class="was">${won(it.list_price)}</s> <span class="off">${off}%</span> ` : ""}${won(it.price)}</div>` : ""}
     ${it.coupon_price && it.coupon_price < it.price ? `<p class="note">쿠폰 적용 시 최대 ${won(it.coupon_price)}</p>` : ""}
     <p class="note">${it.price_checked_at ? `${md(it.price_checked_at)} 판매처 기준 · 가격은 바뀔 수 있어요` : "등록할 때 가격이에요. 판매처에서 확인해 주세요"}</p>
