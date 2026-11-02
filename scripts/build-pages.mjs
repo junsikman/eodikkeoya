@@ -61,7 +61,7 @@ main.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:3
 dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:16px 0}dt{color:var(--muted)}dd{margin:0}
 .scene{background:rgba(0,0,0,.25);border-radius:8px;padding:12px 14px;margin:0 0 16px}
 .buys{display:flex;flex-wrap:wrap;gap:8px}.btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 20px;border-radius:999px;text-decoration:none;font-weight:700;border:1px solid var(--line)}
-.btn.main{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}.btn small{font-weight:500;font-size:11px}
+.btn.main{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}.btn small{font-weight:500;font-size:11px}.btn .low{background:#9CCBA8;color:#10261a;font-weight:700;padding:1px 6px;border-radius:999px}
 .more{grid-column:1/-1;border-top:1px solid var(--line);padding-top:24px}.more h2{font-size:20px;margin:0 0 12px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px}.grid a{text-decoration:none;display:grid;gap:4px;font-size:14px}
 .grid .t{aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--surface)}.grid img{width:100%;height:100%;object-fit:cover}
@@ -74,18 +74,25 @@ function itemPage(it, others) {
   const scene = [s.title, it.ep].filter(Boolean).join(" ");
   const off = it.list_price > it.price ? Math.round((1 - it.price / it.list_price) * 100) : 0;
   const links = [];
-  if (httpUrl(it.buy_url)) links.push({ shop: shopName(it.buy_url), url: it.buy_url, aff: !!it.buy_affiliate, main: true });
-  for (const l of Array.isArray(it.links) ? it.links : []) if (l && httpUrl(l.url)) links.push({ shop: (l.shop || "").trim() || shopName(l.url), url: l.url, aff: !!l.aff });
+  const num = v => (typeof v === "number" && isFinite(v) ? v : null);
+  if (httpUrl(it.buy_url)) links.push({ shop: shopName(it.buy_url), url: it.buy_url, aff: !!it.buy_affiliate, main: true, price: num(it.price) });
+  for (const l of Array.isArray(it.links) ? it.links : []) if (l && httpUrl(l.url)) links.push({ shop: (l.shop || "").trim() || shopName(l.url), url: l.url, aff: !!l.aff, price: num(l.price) });
+  const priced = links.filter(l => l.price !== null);
+  const min = priced.length ? Math.min(...priced.map(l => l.price)) : null;
+  if (priced.length > 1) priced.forEach(l => { if (l.price === min) l.lowest = true; });
+  const mainIsLowest = num(it.price) !== null && it.price <= (min ?? Infinity);
   // 사람들이 실제로 치는 말: "프로그램 인물 분류" (예: 언니네 산지직송3 염정아 모자)
   const cat = CATS[it.cat] || "";
   const kw = [s.title, it.person, cat].filter(Boolean).join(" ");
   const title = `${kw} - ${it.brand} ${it.name} | 어디꺼야?`;
-  const desc = `${[scene, it.person].filter(Boolean).join(" ")} ${cat} 정보: ${it.brand} ${it.name}.${it.price ? ` 가격 ${won(it.price)}.` : ""}${links.length ? ` 구매처: ${[...new Set(links.map(l => l.shop))].join(", ")}.` : ""}`;
+  const desc = `${[scene, it.person].filter(Boolean).join(" ")} ${cat} 정보: ${it.brand} ${it.name}.${min !== null ? ` ${priced.length > 1 ? "최저 " : ""}${won(min)}.` : ""}${links.length ? ` 구매처: ${[...new Set(links.map(l => l.shop))].join(", ")}.` : ""}`;
   const image = httpUrl(it.image_url) ? it.image_url : `${BASE}/og-default.jpg`;
   const ld = {
     "@context": "https://schema.org", "@type": "Product", name: it.name, brand: { "@type": "Brand", name: it.brand },
     image: httpUrl(it.image_url) ? [it.image_url] : undefined, description: desc, url,
-    offers: it.price && links[0] ? { "@type": "Offer", price: it.price, priceCurrency: "KRW", url: links[0].url, availability: "https://schema.org/InStock" } : undefined,
+    offers: priced.length ? (priced.length > 1
+      ? { "@type": "AggregateOffer", lowPrice: min, highPrice: Math.max(...priced.map(l => l.price)), offerCount: priced.length, priceCurrency: "KRW" }
+      : { "@type": "Offer", price: min, priceCurrency: "KRW", url: priced[0].url, availability: "https://schema.org/InStock" }) : undefined,
   };
   return `<!doctype html>
 <html lang="ko">
@@ -114,8 +121,8 @@ function itemPage(it, others) {
     <div class="br">${esc(it.brand)} <span class="vf vf-${esc(it.verify || "guess")}">${VERIFY[it.verify] || "추정"}</span></div>
     <h1>${esc(it.name)}</h1>
     <p class="note">${esc([scene, it.person].filter(Boolean).join(" "))} ${esc(cat)} 정보</p>
-    ${it.price ? `<div class="pr">${off ? `<s class="was">${won(it.list_price)}</s> <span class="off">${off}%</span> ` : ""}${won(it.price)}</div>` : ""}
-    ${it.coupon_price && it.coupon_price < it.price ? `<p class="note">쿠폰 적용 시 최대 ${won(it.coupon_price)}</p>` : ""}
+    ${mainIsLowest ? `<div class="pr">${off ? `<s class="was">${won(it.list_price)}</s> <span class="off">${off}%</span> ` : ""}${won(it.price)}</div>` : min !== null ? `<div class="pr"><span class="off">최저</span> ${won(min)}</div>` : ""}
+    ${it.coupon_price && it.coupon_price < it.price ? `<p class="note">${esc(shopName(it.buy_url))} 쿠폰 적용 시 최대 ${won(it.coupon_price)}</p>` : ""}
     <p class="note">${it.price_checked_at ? `${md(it.price_checked_at)} 판매처 기준 · 가격은 바뀔 수 있어요` : "등록할 때 가격이에요. 판매처에서 확인해 주세요"}</p>
     <dl>
       <dt>인물</dt><dd>${esc(it.person)}</dd>
@@ -124,7 +131,7 @@ function itemPage(it, others) {
       <dt>분류</dt><dd>${esc(CATS[it.cat] || "")}</dd>
     </dl>
     ${it.scene ? `<p class="scene">${esc(it.scene)}</p>` : ""}
-    ${links.length ? `<div class="buys">${links.map(l => `<a class="btn${l.main ? " main" : ""}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer${l.aff ? " sponsored" : ""}">${esc(l.shop)}에서 보기${l.aff ? " <small>제휴</small>" : ""}</a>`).join("")}</div>` : `<p class="note">구매처 정보가 아직 없어요.</p>`}
+    ${links.length ? `<div class="buys">${links.map(l => `<a class="btn${l.main ? " main" : ""}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer${l.aff ? " sponsored" : ""}">${esc(l.shop)}${l.price !== null ? ` ${won(l.price)}` : " 보기"}${l.lowest ? ' <small class="low">최저가</small>' : ""}${l.aff ? " <small>제휴</small>" : ""}</a>`).join("")}</div>` : `<p class="note">구매처 정보가 아직 없어요.</p>`}
     ${links.some(l => l.aff) ? `<p class="note">‘제휴’ 링크로 구매하면 어디꺼야?가 수수료를 받을 수 있어요.</p>` : ""}
     <p style="margin-top:20px"><a class="btn" href="${BASE}/">어디꺼야?에서 다른 착장 보기</a></p>
   </div>

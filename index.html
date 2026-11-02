@@ -146,11 +146,13 @@ section{padding-block:44px;border-top:1px solid var(--line)}
 .buys .aff{font-size:11px;font-weight:500;opacity:.8}
 fieldset.links{border:1px solid var(--line);border-radius:8px;padding:12px;margin:0;display:grid;gap:8px;min-width:0}
 fieldset.links legend{font-size:14px;font-weight:700;padding:0 4px}
-.lrow{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) auto auto;gap:8px;align-items:center}
+.lrow{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr) minmax(0,.7fr) auto auto;gap:8px;align-items:center}
+.buys .lp{font-weight:700}
+.buys .low{font-size:11px;font-weight:700;background:var(--ok);color:#10261a;padding:1px 6px;border-radius:999px}
 .laff{display:flex;gap:6px;align-items:center;font-size:14px;white-space:nowrap}
 .laff input{width:auto}
 #iAddLink{justify-self:start}
-@media (max-width:560px){.lrow{grid-template-columns:1fr auto auto}.lrow .lurl{grid-column:1/-1;grid-row:2}}
+@media (max-width:560px){.lrow{grid-template-columns:1fr 1fr auto auto}.lrow .lurl{grid-column:1/-1;grid-row:2}}
 .item .who{font-size:14px;color:var(--muted)}
 .full{grid-column:1/-1}
 .tag{display:inline-block;font-size:11px;font-weight:500;padding:1px 6px;border-radius:8px;border:1px solid var(--line);color:var(--muted);vertical-align:middle;letter-spacing:0;text-transform:none;font-family:var(--body)}
@@ -391,7 +393,7 @@ footer .logo{font-size:20px;color:var(--ink)}
         <label for="iScene">장면 설명<textarea id="iScene" maxlength="600" placeholder="어느 장면에서 어떻게 입었는지"></textarea></label>
         <label for="iUrl">대표 구매 링크 (W컨셉이면 가격을 매일 자동 확인해요)<input id="iUrl" type="url" maxlength="600" placeholder="https://"></label>
         <label class="laff" style="font-weight:500"><input type="checkbox" id="iAff"> 대표 링크가 제휴 링크예요</label>
-        <fieldset class="links"><legend>다른 구매처 (최대 5개)</legend>
+        <fieldset class="links"><legend>다른 구매처 (최대 5개 · 가격은 매일 자동 확인, 안 되는 쇼핑몰은 직접 입력)</legend>
           <div id="iLinks"></div>
           <button type="button" class="ghost" id="iAddLink">구매처 추가</button>
         </fieldset>

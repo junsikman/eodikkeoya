@@ -64,9 +64,19 @@ function shopName(url){try{const h=new URL(url).hostname.replace(/^(www|m)\./,""
 const httpUrl=u=>typeof u==="string"&&/^https?:\/\//i.test(u);
 function buyLinks(it){
   const out=[];
-  if(httpUrl(it.buyUrl))out.push({shop:shopName(it.buyUrl),url:it.buyUrl,aff:it.buyAffiliate,main:true});
-  for(const l of it.links||[])if(l&&httpUrl(l.url))out.push({shop:(l.shop||"").trim()||shopName(l.url),url:l.url,aff:!!l.aff});
+  if(httpUrl(it.buyUrl))out.push({shop:shopName(it.buyUrl),url:it.buyUrl,aff:it.buyAffiliate,main:true,price:hasNum(it.price)?it.price:null,checked:it.priceCheckedAt});
+  for(const l of it.links||[])if(l&&httpUrl(l.url))out.push({shop:(l.shop||"").trim()||shopName(l.url),url:l.url,aff:!!l.aff,price:hasNum(l.price)?l.price:null,checked:l.checked_at||null});
+  const priced=out.filter(l=>hasNum(l.price));
+  if(priced.length>1){const min=Math.min(...priced.map(l=>l.price));priced.forEach(l=>{if(l.price===min)l.lowest=true})}
   return out;
+}
+/* 카드·상세 창 맨 위 가격: 대표 링크가 가장 싸면 할인 표시 그대로, 다른 구매처가 더 싸면 "최저" 가격 */
+function topPriceHtml(it){
+  const ps=buyLinks(it).map(l=>l.price).filter(hasNum);
+  if(!ps.length)return priceHtml(it);
+  const min=Math.min(...ps);
+  if(hasNum(it.price)&&it.price<=min)return priceHtml(it);
+  return `<b class="off">최저</b> ${won(min)}`;
 }
 const vfTag=it=>`<span class="vf vf-${esc(it.verify)}">${VERIFY[it.verify]||"추정"}</span>`;
 const sceneText=it=>it.ep||"";
@@ -132,7 +142,7 @@ function renderItems(){
   if(!S.itemsOk&&!S.noDb){$("#itemGrid").innerHTML="";return}
   $("#itemGrid").innerHTML=S.noDb?`<p class="empty full">착장 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>`
    :list.length?list.map(it=>`<button class="item" data-id="${esc(it.id)}">${thumb(it)}
-   <span class="br">${esc(it.brand)}${sampleTag(it)} ${vfTag(it)}</span><span class="nm">${esc(it.name)}</span><span class="pr">${priceHtml(it)}</span>
+   <span class="br">${esc(it.brand)}${sampleTag(it)} ${vfTag(it)}</span><span class="nm">${esc(it.name)}</span><span class="pr">${topPriceHtml(it)}</span>
    <span class="who">${esc(it.person)} · ${esc(showOf(it.showId).title)}</span></button>`).join("")
    :`<p class="empty full">${S.items.length?"조건에 맞는 착장이 아직 없어요. 아래에서 제보해 주시면 확인해서 올려둘게요.":"아직 등록된 착장이 없어요."}</p>`;
 }
@@ -161,12 +171,12 @@ function openItem(id,fromHash){
   $("#ov").innerHTML=`<div class="md" role="dialog" aria-modal="true" aria-label="${esc(it.name)}">
    <button class="x" id="close" aria-label="닫기">×</button>${thumb(it)}
    <button class="share" id="shareItem" data-share="${esc(it.id)}">링크 공유</button>
-   <div class="bd"><span class="br">${esc(it.brand)}${sampleTag(it)}</span><h3>${esc(it.name)}</h3><span class="pr">${priceHtml(it)}</span>${hasNum(it.couponPrice)?`<span class="note">쿠폰 적용 시 최대 ${won(it.couponPrice)}</span>`:""}<span class="note">${priceNote(it)}</span>
+   <div class="bd"><span class="br">${esc(it.brand)}${sampleTag(it)}</span><h3>${esc(it.name)}</h3><span class="pr">${topPriceHtml(it)}</span>${hasNum(it.couponPrice)?`<span class="note">${esc(shopName(it.buyUrl))} 쿠폰 적용 시 최대 ${won(it.couponPrice)}</span>`:""}<span class="note">${priceNote(it)}</span>
    <dl><dt>확인</dt><dd>${vfTag(it)}</dd><dt>인물</dt><dd>${esc(it.person)}</dd><dt>프로그램</dt><dd>${esc(s.title)}${sceneText(it)?" · "+esc(sceneText(it)):""}</dd>
    ${s.platform?`<dt>플랫폼</dt><dd>${esc(s.platform)}</dd>`:""}<dt>분류</dt><dd>${CATS[it.cat]||""}</dd></dl>
    ${it.scene?`<p class="scene">${esc(it.scene)}</p>`:""}
    ${(()=>{const ls=buyLinks(it);if(!ls.length)return `<p class="note">구매처 정보가 아직 없어요.</p>`;
-     return `<div class="buys">${ls.map(l=>`<a class="${l.main?"primary":"ghost"}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer${l.aff?" sponsored":""}">${esc(l.shop)}에서 보기${l.aff?' <small class="aff">제휴</small>':""}</a>`).join("")}</div>${ls.some(l=>l.aff)?`<p class="note">‘제휴’ 링크로 구매하면 어디꺼야?가 수수료를 받을 수 있어요.</p>`:""}`})()}
+     return `<div class="buys">${ls.map(l=>`<a class="${l.main?"primary":"ghost"}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer${l.aff?" sponsored":""}">${esc(l.shop)}${hasNum(l.price)?` <b class="lp">${won(l.price)}</b>`:" 보기"}${l.lowest?' <small class="low">최저가</small>':""}${l.aff?' <small class="aff">제휴</small>':""}</a>`).join("")}</div>${ls.some(l=>l.aff)?`<p class="note">‘제휴’ 링크로 구매하면 어디꺼야?가 수수료를 받을 수 있어요.</p>`:""}`})()}
    ${same.length?`<div><b style="font-size:15px">${esc(it.person)}의 다른 착장</b><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">${same.map(x=>`<button class="mini" data-id="${esc(x.id)}">${thumb(x)}<span style="font-size:13px">${esc(x.name)}</span></button>`).join("")}</div></div>`:""}
    </div></div>`;
   $("#ov").dataset.item=it.id;$("#ov").hidden=false;$("#close").focus();document.body.style.overflow="hidden";
@@ -256,13 +266,24 @@ function linkRow(l={}){
   const d=document.createElement("div");d.className="lrow";
   d.innerHTML=`<input class="lshop" maxlength="20" placeholder="쇼핑몰" aria-label="쇼핑몰 이름" value="${esc(l.shop||"")}">
    <input class="lurl" type="url" maxlength="600" placeholder="https://" aria-label="구매 링크" value="${esc(l.url||"")}">
+   <input class="lprice" type="number" min="0" step="10" placeholder="가격(원)" aria-label="이 구매처 가격(원)" value="${hasNum(l.price)?l.price:""}">
    <label class="laff"><input type="checkbox" class="lafc"${l.aff?" checked":""}> 제휴</label>
    <button type="button" class="ghost lrm" aria-label="이 구매처 빼기">빼기</button>`;
   return d;
 }
 function setLinks(ls){const box=$("#iLinks");box.innerHTML="";(ls||[]).forEach(l=>box.appendChild(linkRow(l)));$("#iAddLink").hidden=box.children.length>=5}
 function readLinks(){
-  return $$("#iLinks .lrow").map(r=>({shop:r.querySelector(".lshop").value.trim(),url:r.querySelector(".lurl").value.trim(),aff:r.querySelector(".lafc").checked})).filter(l=>l.url);
+  const prev=editI?(S.items.find(i=>i.id===editI)?.links||[]):[];
+  return $$("#iLinks .lrow").map(r=>{
+    const url=r.querySelector(".lurl").value.trim(),pv=r.querySelector(".lprice").value;
+    const price=pv===""?null:Math.round(+pv);
+    const old=prev.find(o=>o&&o.url===url)||{};
+    const l={shop:r.querySelector(".lshop").value.trim(),url,aff:r.querySelector(".lafc").checked,price};
+    if(old.price===price&&price!==null){ // 가격을 안 바꿨으면 자동 확인 기록을 그대로 둬요
+      for(const k of ["list","checked_at","failed","src"])if(old[k]!==undefined)l[k]=old[k];
+    }else if(price!==null)l.src="manual";
+    return l;
+  }).filter(l=>l.url);
 }
 $("#iAddLink").addEventListener("click",()=>{$("#iLinks").appendChild(linkRow());$("#iAddLink").hidden=$("#iLinks").children.length>=5;$("#iLinks").lastElementChild.querySelector(".lurl").focus()});
 $("#iLinks").addEventListener("click",e=>{const b=e.target.closest(".lrm");if(!b)return;b.closest(".lrow").remove();$("#iAddLink").hidden=false});

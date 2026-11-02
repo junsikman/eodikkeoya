@@ -61,38 +61,89 @@ async function wconcept(url) {
   return { list, sale: sale ?? list, coupon };
 }
 
-const SHOPS = [{ host: /(^|\.)wconcept\.co\.kr$/i, read: wconcept }];
-
-// ---- 실행 ----
-const items = await db("items?select=id,name,buy_url,price&buy_url=neq.", { headers: { Prefer: "" } });
-let ok = 0, failed = 0, skipped = 0;
-
-for (const it of items) {
-  let host;
-  try { host = new URL(it.buy_url).hostname; } catch { skipped++; continue; }
-  const shop = SHOPS.find(s => s.host.test(host));
-  if (!shop) { skipped++; continue; }
-
-  try {
-    const p = await shop.read(it.buy_url);
-    const patch = {
-      price: p.sale,
-      list_price: p.list,
-      coupon_price: p.coupon && p.coupon < (p.sale ?? Infinity) ? p.coupon : null,
-      price_checked_at: new Date().toISOString(),
-      price_check_failed: false,
-    };
-    await db(`items?id=eq.${it.id}`, { method: "PATCH", body: JSON.stringify(patch) });
-    ok++;
-    console.log(`확인 ${it.name}: 정가 ${p.list} / 판매가 ${p.sale} / 쿠폰가 ${p.coupon}`);
-  } catch (e) {
-    failed++;
-    console.log(`실패 ${it.name}: ${e.message}`);
+// 그 밖의 쇼핑몰: 페이지에 들어 있는 표준 상품 정보(JSON-LD, 상품 가격 태그)를 읽어요.
+// 쇼핑몰이 자동 접속을 막으면(네이버 브랜드스토어·스마트스토어 등) 실패하고, 관리자가 넣은 가격을 그대로 둬요.
+async function generic(url) {
+  const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "ko-KR,ko;q=0.9", Accept: "text/html" }, redirect: "follow" });
+  if (!res.ok) throw new Error(`응답 ${res.status}${res.status === 403 || res.status === 429 ? " (자동 접속을 막는 쇼핑몰이에요)" : ""}`);
+  const html = await res.text();
+  const nums = [];
+  for (const m of html.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
     try {
-      await db(`items?id=eq.${it.id}`, { method: "PATCH", body: JSON.stringify({ price_check_failed: true }) });
-    } catch (e2) { console.log(`  실패 표시도 저장하지 못했어요: ${e2.message}`); }
+      const walk = o => {
+        if (!o || typeof o !== "object") return;
+        if (Array.isArray(o)) return o.forEach(walk);
+        const t = [].concat(o["@type"] || []);
+        if (t.some(x => /Offer/i.test(x))) { const v = toInt(o.price ?? o.lowPrice); if (v) nums.push(v); }
+        Object.values(o).forEach(walk);
+      };
+      walk(JSON.parse(m[1]));
+    } catch {}
   }
-  await sleep(3000); // 판매처에 부담을 주지 않도록 천천히
+  if (!nums.length) {
+    const m = html.match(/<meta[^>]+(?:property|name|itemprop)=["'](?:product:price:amount|og:price:amount|price)["'][^>]*content=["']([\d.,]+)/i)
+      || html.match(/<meta[^>]+content=["']([\d.,]+)["'][^>]*(?:property|name|itemprop)=["'](?:product:price:amount|og:price:amount|price)["']/i);
+    if (m) { const v = toInt(m[1]); if (v) nums.push(v); }
+  }
+  if (!nums.length) throw new Error("페이지에서 가격 정보를 찾지 못했어요");
+  const sale = Math.min(...nums);
+  return { list: null, sale, coupon: null };
 }
 
-console.log(`끝: 확인 ${ok}개, 실패 ${failed}개, 지원 안 하는 판매처 ${skipped}개`);
+const SHOPS = [{ host: /(^|\.)wconcept\.co\.kr$/i, read: wconcept }];
+async function readPrice(url) {
+  const host = new URL(url).hostname;
+  const shop = SHOPS.find(s => s.host.test(host));
+  return (shop ? shop.read : generic)(url);
+}
+
+// ---- 실행 ----
+const items = await db("items?select=id,name,buy_url,price,links", { headers: { Prefer: "" } });
+let ok = 0, failed = 0;
+
+for (const it of items) {
+  const now = new Date().toISOString();
+  const patch = {};
+
+  // 대표 구매 링크
+  if (/^https?:\/\//i.test(it.buy_url || "")) {
+    try {
+      const p = await readPrice(it.buy_url);
+      Object.assign(patch, {
+        price: p.sale, list_price: p.list,
+        coupon_price: p.coupon && p.coupon < (p.sale ?? Infinity) ? p.coupon : null,
+        price_checked_at: now, price_check_failed: false,
+      });
+      ok++; console.log(`확인 ${it.name} [대표]: 정가 ${p.list} / 판매가 ${p.sale} / 쿠폰가 ${p.coupon}`);
+    } catch (e) {
+      failed++; patch.price_check_failed = true;
+      console.log(`실패 ${it.name} [대표]: ${e.message}`);
+    }
+    await sleep(3000); // 판매처에 부담을 주지 않도록 천천히
+  }
+
+  // 다른 구매처
+  const links = Array.isArray(it.links) ? it.links.map(l => ({ ...l })) : [];
+  let linksChanged = false;
+  for (const l of links) {
+    if (!/^https?:\/\//i.test(l?.url || "")) continue;
+    try {
+      const p = await readPrice(l.url);
+      Object.assign(l, { price: p.sale, list: p.list, checked_at: now, failed: false, src: "auto" });
+      ok++; console.log(`확인 ${it.name} [${l.shop || new URL(l.url).hostname}]: 판매가 ${p.sale}`);
+    } catch (e) {
+      l.failed = true;
+      failed++; console.log(`실패 ${it.name} [${l.shop || new URL(l.url).hostname}]: ${e.message}`);
+    }
+    linksChanged = true;
+    await sleep(3000);
+  }
+  if (linksChanged) patch.links = links;
+
+  if (Object.keys(patch).length) {
+    try { await db(`items?id=eq.${it.id}`, { method: "PATCH", body: JSON.stringify(patch) }); }
+    catch (e) { console.log(`  저장하지 못했어요: ${e.message}`); }
+  }
+}
+
+console.log(`끝: 가격 확인 ${ok}개, 실패 ${failed}개`);
