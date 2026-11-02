@@ -1,0 +1,45 @@
+name: 데이터 백업
+
+on:
+  schedule:
+    - cron: "37 18 * * *" # 매일 한국 시간 새벽 3시 37분
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: 수파베이스 데이터 내려받기
+        run: node scripts/backup.mjs /tmp/backup
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: backup 브랜치에 저장
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch --depth=1 origin backup 2>/dev/null; then
+            git checkout -B backup FETCH_HEAD
+          else
+            git checkout --orphan backup
+            git rm -rf --quiet . || true
+          fi
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp /tmp/backup/*.json .
+          printf '# 어디꺼야? 데이터 백업\n\n매일 새벽 자동으로 저장돼요. 이전 날짜의 데이터는 이 브랜치의 커밋 기록(History)에서 볼 수 있어요.\n' > README.md
+          git add -A
+          if git diff --cached --quiet; then echo "바뀐 데이터가 없어요"; exit 0; fi
+          git commit -m "백업 $(TZ=Asia/Seoul date +%Y-%m-%d)"
+          git push origin backup
