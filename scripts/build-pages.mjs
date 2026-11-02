@@ -6,6 +6,10 @@ const BASE = (process.env.SITE_URL || "https://junsikman.github.io/eodikkeoya").
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
 const KEY = process.env.SUPABASE_KEY || "";
 const OUT = "_site";
+// 방문자 통계 코드는 app.js의 GOATCOUNTER 값을 그대로 써요
+const GC = ((await readFile("app.js", "utf8")).match(/const GOATCOUNTER="([a-z0-9-]*)"/) || [])[1] || "";
+const GC_TAG = GC ? `<script data-goatcounter="https://${GC}.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+<script>document.addEventListener("click",function(e){var a=e.target.closest(".buys a");if(!a||!window.goatcounter||!goatcounter.count)return;goatcounter.count({path:"구매처 클릭: "+a.textContent.trim().split(/\\s/)[0]+" · "+document.querySelector("h1").textContent,event:true})});</script>` : "";
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const won = n => (typeof n === "number" && isFinite(n) ? n.toLocaleString("ko-KR") + "원" : "");
@@ -142,6 +146,7 @@ function itemPage(it, others) {
   <span>구매 링크 중 일부는 제휴 링크일 수 있으며, 이 링크로 구매하면 어디꺼야?가 일정 수수료를 받을 수 있어요.</span>
   <span>정보 수정·삭제 요청과 문의: <a href="mailto:zpvlfntm1@naver.com">zpvlfntm1@naver.com</a></span>
 </footer>
+${GC_TAG}
 </body>
 </html>
 `;

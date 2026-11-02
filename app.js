@@ -54,6 +54,17 @@ const md=iso=>{const d=new Date(iso);return isNaN(d)?"":`${d.getMonth()+1}월 ${
 /* Supabase: 공개(publishable) 키만 둡니다. 실제 권한은 수파베이스 보안 규칙(RLS)이 정해요. */
 const SUPABASE_URL="https://zsguwckfbnglcwubmsor.supabase.co";
 const SUPABASE_KEY="sb_publishable_sgNoVED5UXmYv85QtPZSlA_L8XzIpay";
+/* 방문자 통계(GoatCounter): 가입할 때 정한 코드를 넣으면 켜져요. 비워 두면 아무것도 세지 않아요. */
+const GOATCOUNTER="";
+const BASE_PATH=location.pathname.replace(/[^/]*$/,"");
+function track(path,title,event){
+  try{if(!GOATCOUNTER||location.hash==="#admin"||!window.goatcounter||!window.goatcounter.count)return;
+    window.goatcounter.count({path,title:title||path,event:!!event})}catch(e){}
+}
+if(GOATCOUNTER&&location.hash!=="#admin"){
+  const g=document.createElement("script");g.async=true;g.src="https://gc.zgo.at/count.js";
+  g.dataset.goatcounter=`https://${GOATCOUNTER}.goatcounter.com/count`;document.head.appendChild(g);
+}
 const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:"pkce",detectSessionInUrl:true,persistSession:true}}):null;
 const S={items:[],shows:[],reports:[],people:[],itemsOk:false,showsOk:false,owner:false,noDb:false};
 const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,personId:r.person_id,verify:r.verify||"guess",sceneTime:r.scene_time||"",links:Array.isArray(r.links)?r.links:[],buyAffiliate:!!r.buy_affiliate,showId:r.show_id,ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
@@ -164,6 +175,7 @@ const itemUrl=it=>location.origin+location.pathname.replace(/[^/]*$/,"")+"item/"
 let itemPushed=false;
 function openItem(id,fromHash){
   const it=S.items.find(i=>i.id===id);if(!it)return;
+  track(BASE_PATH+"item/"+String(id).slice(0,8)+"/",`${it.person} · ${it.brand} ${it.name}`);
   if(!fromHash){const h="#i/"+shortId(id);if(location.hash!==h){history.pushState(null,"",h);itemPushed=true}}
   recent=[id,...recent.filter(x=>x!==id)].slice(0,12);saveRecent();renderRecent();
   const s=showOf(it.showId);
@@ -226,7 +238,7 @@ $("#reqForm").addEventListener("submit",async e=>{
     cat:$("#rCat").value,descr:$("#rDesc").value.trim(),link:$("#rLink").value.trim()};
   const {error}=await sb.from("reports").insert(r);
   if(error)toast(/limit|duplicate/i.test(error.message||"")?"같은 제보가 이미 있거나 제보가 너무 많아요. 잠시 후 다시 보내 주세요":"제보를 보내지 못했어요. 잠시 후 다시 시도해 주세요");
-  else{lastReportAt=Date.now();e.target.reset();toast("제보가 접수됐어요. 확인 후 등록할게요")}
+  else{track("제보 보냄","",true);lastReportAt=Date.now();e.target.reset();toast("제보가 접수됐어요. 확인 후 등록할게요")}
   btn.disabled=false;
 });
 
@@ -500,7 +512,7 @@ document.addEventListener("click",async e=>{
   if(b.dataset.copyurl){const it=S.items.find(i=>i.id===b.dataset.copyurl);if(!it)return;const url=itemUrl(it);
     try{await navigator.clipboard.writeText(url);toast("아이템 주소를 복사했어요. 새로 올린 아이템은 1시간쯤 뒤에 페이지가 생겨요")}catch(e){prompt("이 주소를 복사해 주세요",url)}return}
   if(b.dataset.id)return openItem(b.dataset.id);
-  if(b.dataset.cat){F.cat=F.cat===b.dataset.cat?"":b.dataset.cat;renderCats();renderItems();if(F.cat)go();return}
+  if(b.dataset.cat){if(F.cat!==b.dataset.cat)track("둘러보기: "+(CATS[b.dataset.cat]||b.dataset.cat),"",true);F.cat=F.cat===b.dataset.cat?"":b.dataset.cat;renderCats();renderItems();if(F.cat)go();return}
   if(b.dataset.show){F={q:"",cat:"",show:b.dataset.show,person:""};$("#q").value="";renderCats();renderItems();go();return}
   if(b.dataset.person){F={q:"",cat:"",show:"",person:b.dataset.person};$("#q").value="";renderCats();renderItems();go();return}
   if(b.dataset.plat){plat=b.dataset.plat;renderUps();return}
@@ -530,8 +542,10 @@ document.addEventListener("click",async e=>{
     catch(err){dbErr(err);b.disabled=false}return}
 });
 $("#ov").addEventListener("click",e=>{if(e.target.id==="ov")closeItem()});
+$("#ov").addEventListener("click",e=>{const a=e.target.closest(".buys a");if(!a)return;const it=S.items.find(i=>i.id===$("#ov").dataset.item);
+  track("구매처 클릭: "+(a.textContent.trim().split(/\s/)[0]||"")+" · "+(it?it.name:""),"",true)});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#ov").hidden)closeItem()});
-$("#searchForm").addEventListener("submit",e=>{e.preventDefault();F={q:$("#q").value,cat:"",show:"",person:""};renderCats();renderItems();go()});
+$("#searchForm").addEventListener("submit",e=>{e.preventDefault();if($("#q").value.trim())track("검색: "+$("#q").value.trim().slice(0,60),"",true);F={q:$("#q").value,cat:"",show:"",person:""};renderCats();renderItems();go()});
 $("#q").addEventListener("input",()=>{F.q=$("#q").value;F.show="";F.person="";renderItems()});
 
 /* ---------- boot ---------- */
