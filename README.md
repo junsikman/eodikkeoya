@@ -36,7 +36,7 @@
 설정
 
 1. Supabase SQL Editor에서 `supabase/006_auto_finds.sql`을 실행해요.
-2. [네이버 개발자센터](https://developers.naver.com/apps/#/register)에서 애플리케이션을 등록해요. 사용 API는 "검색", 환경은 "WEB 설정"에 사이트 주소를 넣어요.
+2. 네이버 검색 API는 2026년에 [네이버 클라우드 플랫폼](https://console.ncloud.com) NAVER API HUB로 옮겨졌어요. 콘솔에서 NAVER API HUB 이용 신청 → 앱 등록(블로그 검색·뉴스 검색 선택) → 인증 정보에서 Client ID / Client Secret을 확인해요.
 3. 저장소 Settings → Secrets and variables → Actions에 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`을 넣어요.
 4. Actions 탭의 "착장 정보 자동 수집"에서 Run workflow로 바로 실행해 볼 수 있어요.
 

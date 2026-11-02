@@ -5,6 +5,7 @@
 //
 // 깃허브 자동 작업(.github/workflows/collect-finds.yml)이 하루 한 번 실행해요. 내 컴퓨터에서도 돌릴 수 있어요.
 // 필요한 비밀값: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
+//   (네이버 값은 네이버 클라우드 플랫폼 NAVER API HUB 앱의 Client ID / Client Secret)
 // 고를 수 있는 값: OLLAMA_URL(기본 http://localhost:11434), OLLAMA_MODEL(기본 qwen2.5:7b),
 //                  DAYS(며칠 전 글까지, 기본 3), MAX_DOCS(한 번에 읽을 글 수, 기본 30), DRY_RUN=1(저장 안 하고 보기만)
 
@@ -54,9 +55,12 @@ async function db(path, init = {}) {
 
 // ---- 네이버 검색 ----
 async function naver(kind, query) {
-  const u = `https://openapi.naver.com/v1/search/${kind}.json?query=${encodeURIComponent(query)}&display=20&sort=date`;
-  const res = await fetch(u, { headers: { "X-Naver-Client-Id": NAVER_ID, "X-Naver-Client-Secret": NAVER_SECRET } });
-  if (!res.ok) throw new Error(`네이버 검색 ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  // 네이버 검색 API는 2026년에 네이버 클라우드 플랫폼의 NAVER API HUB로 옮겨졌어요.
+  const base = `https://naverapihub.apigw.ntruss.com/search/v1/${kind}?query=${encodeURIComponent(query)}&display=20`;
+  const headers = { "X-NCP-APIGW-API-KEY-ID": NAVER_ID, "X-NCP-APIGW-API-KEY": NAVER_SECRET, Accept: "application/json" };
+  let res = await fetch(`${base}&sort=date`, { headers });
+  if (res.status === 400) res = await fetch(base, { headers }); // 최신순 정렬을 받지 않으면 정렬 없이 다시 물어봐요
+  if (!res.ok) throw new Error(`네이버 검색 ${res.status}${res.status === 401 || res.status === 403 ? " (API HUB 키가 맞는지, 앱에서 블로그·뉴스 검색을 골랐는지 확인해 주세요)" : ""}: ${(await res.text()).slice(0, 200)}`);
   const j = await res.json();
   return (j.items || []).map(it => {
     const date = kind === "news" ? new Date(it.pubDate)
