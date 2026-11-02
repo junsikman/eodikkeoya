@@ -55,7 +55,7 @@ const md=iso=>{const d=new Date(iso);return isNaN(d)?"":`${d.getMonth()+1}월 ${
 const SUPABASE_URL="https://zsguwckfbnglcwubmsor.supabase.co";
 const SUPABASE_KEY="sb_publishable_sgNoVED5UXmYv85QtPZSlA_L8XzIpay";
 /* 방문자 통계(GoatCounter): 가입할 때 정한 코드를 넣으면 켜져요. 비워 두면 아무것도 세지 않아요. */
-const GOATCOUNTER="";
+const GOATCOUNTER="eodikkeoya";
 const BASE_PATH=location.pathname.replace(/[^/]*$/,"");
 function track(path,title,event){
   try{if(!GOATCOUNTER||location.hash==="#admin"||!window.goatcounter||!window.goatcounter.count)return;
