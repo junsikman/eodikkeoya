@@ -149,13 +149,18 @@ function renderUps(){
 function renderSite(){renderCats();renderRecent();renderPeople();renderItems();renderUps();renderShowSelect()}
 
 /* ---------- item modal ---------- */
-function openItem(id){
+const shortId=id=>String(id).slice(0,8);
+const itemUrl=it=>location.origin+location.pathname.replace(/[^/]*$/,"")+"item/"+shortId(it.id)+"/";
+let itemPushed=false;
+function openItem(id,fromHash){
   const it=S.items.find(i=>i.id===id);if(!it)return;
+  if(!fromHash){const h="#i/"+shortId(id);if(location.hash!==h){history.pushState(null,"",h);itemPushed=true}}
   recent=[id,...recent.filter(x=>x!==id)].slice(0,12);saveRecent();renderRecent();
   const s=showOf(it.showId);
   const same=S.items.filter(i=>i.person===it.person&&i.id!==it.id).slice(0,3);
   $("#ov").innerHTML=`<div class="md" role="dialog" aria-modal="true" aria-label="${esc(it.name)}">
    <button class="x" id="close" aria-label="닫기">×</button>${thumb(it)}
+   <button class="share" id="shareItem" data-share="${esc(it.id)}">링크 공유</button>
    <div class="bd"><span class="br">${esc(it.brand)}${sampleTag(it)}</span><h3>${esc(it.name)}</h3><span class="pr">${priceHtml(it)}</span>${hasNum(it.couponPrice)?`<span class="note">쿠폰 적용 시 최대 ${won(it.couponPrice)}</span>`:""}<span class="note">${priceNote(it)}</span>
    <dl><dt>확인</dt><dd>${vfTag(it)}</dd><dt>인물</dt><dd>${esc(it.person)}</dd><dt>프로그램</dt><dd>${esc(s.title)}${sceneText(it)?" · "+esc(sceneText(it)):""}</dd>
    ${s.platform?`<dt>플랫폼</dt><dd>${esc(s.platform)}</dd>`:""}<dt>분류</dt><dd>${CATS[it.cat]||""}</dd></dl>
@@ -164,9 +169,20 @@ function openItem(id){
      return `<div class="buys">${ls.map(l=>`<a class="${l.main?"primary":"ghost"}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer${l.aff?" sponsored":""}">${esc(l.shop)}에서 보기${l.aff?' <small class="aff">제휴</small>':""}</a>`).join("")}</div>${ls.some(l=>l.aff)?`<p class="note">‘제휴’ 링크로 구매하면 어디꺼야?가 수수료를 받을 수 있어요.</p>`:""}`})()}
    ${same.length?`<div><b style="font-size:15px">${esc(it.person)}의 다른 착장</b><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">${same.map(x=>`<button class="mini" data-id="${esc(x.id)}">${thumb(x)}<span style="font-size:13px">${esc(x.name)}</span></button>`).join("")}</div></div>`:""}
    </div></div>`;
-  $("#ov").hidden=false;$("#close").focus();document.body.style.overflow="hidden";
+  $("#ov").dataset.item=it.id;$("#ov").hidden=false;$("#close").focus();document.body.style.overflow="hidden";
 }
-function closeItem(){$("#ov").hidden=true;$("#ov").innerHTML="";document.body.style.overflow=""}
+function hideItem(){$("#ov").hidden=true;$("#ov").innerHTML="";document.body.style.overflow=""}
+function closeItem(){
+  hideItem();
+  if(location.hash.startsWith("#i/")){if(itemPushed){itemPushed=false;history.back()}else history.replaceState(null,"",location.pathname+location.search)}
+}
+async function shareItem(id){
+  const it=S.items.find(i=>i.id===id);if(!it)return;
+  const url=itemUrl(it),title=`${it.person} · ${it.brand} ${it.name}`;
+  if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({title,url});return}catch(e){if(e&&e.name==="AbortError")return}}
+  try{await navigator.clipboard.writeText(url);toast("링크를 복사했어요. 카톡이나 커뮤니티에 붙여 넣어 보세요")}
+  catch(e){prompt("이 링크를 복사해 주세요",url)}
+}
 let tt;function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2800)}
 function go(){document.getElementById("items").scrollIntoView({behavior:"smooth",block:"start"})}
 
@@ -443,7 +459,12 @@ $("#logout").addEventListener("click",async()=>{if(sb)await sb.auth.signOut();S.
 
 /* ---------- routing ---------- */
 function route(){
-  const adm=location.hash==="#admin";
+  const h=location.hash;
+  if(h.startsWith("#i/")){
+    const it=S.items.find(i=>shortId(i.id)===h.slice(3).toLowerCase());
+    if(it&&!(!$("#ov").hidden&&$("#ov").dataset.item===it.id))openItem(it.id,true);
+  }else if(!$("#ov").hidden){itemPushed=false;hideItem()}
+  const adm=h==="#admin";
   $("#site").hidden=adm;$("#admin").hidden=!adm;
   $("#login").hidden=!adm||S.owner;$("#admBody").hidden=!S.owner;
   if(adm){if(S.owner)renderAdmin();window.scrollTo(0,0)}
@@ -454,6 +475,7 @@ window.addEventListener("hashchange",route);
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;
   if(b.id==="close")return closeItem();
+  if(b.dataset.share)return shareItem(b.dataset.share);
   if(b.dataset.id)return openItem(b.dataset.id);
   if(b.dataset.cat){F.cat=F.cat===b.dataset.cat?"":b.dataset.cat;renderCats();renderItems();if(F.cat)go();return}
   if(b.dataset.show){F={q:"",cat:"",show:b.dataset.show,person:""};$("#q").value="";renderCats();renderItems();go();return}
@@ -498,4 +520,5 @@ route();
   await applyAuth(data.session);
   sb.auth.onAuthStateChange((_ev,session)=>{setTimeout(()=>applyAuth(session),0)});
   await loadData();
+  if(location.hash.startsWith("#i/"))route();
 })();
