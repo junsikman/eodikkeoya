@@ -11,7 +11,7 @@ permissions:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       # 깃허브 컴퓨터는 그래픽카드가 없어서 작은 모델을 써요.
       # 바꾸고 싶으면 저장소 Settings → Secrets and variables → Actions → Variables에 OLLAMA_MODEL을 만드세요.
@@ -44,5 +44,5 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
-          MAX_DOCS: 25
+          MAX_DOCS: 35
           TEXT_LIMIT: 2500
