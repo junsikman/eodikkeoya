@@ -299,7 +299,7 @@ function renderAdmin(){
   $$("[data-panel]").forEach(p=>p.hidden=p.dataset.panel!==tab);
   $("#iList").innerHTML=S.items.length?[...S.items].sort(byNew).map(it=>`<div class="arow">${thumb(it)}
     <div style="min-width:0"><b>${esc(it.brand)} · ${esc(it.name)}</b><span>${esc(it.person)} · ${esc(showOf(it.showId).title)} ${esc(it.ep||"")} · ${won(it.price)}${it.priceCheckFailed?" · <em class=\"warn\">가격 확인 실패</em>":it.priceCheckedAt?" · "+md(it.priceCheckedAt)+" 확인":""}</span></div>
-    <div class="btns"><button class="ghost" data-edit="item:${esc(it.id)}">수정</button>${delBtn("item",it.id)}</div></div>`).join("")
+    <div class="btns"><button class="ghost" data-copyurl="${esc(it.id)}">주소 복사</button><button class="ghost" data-edit="item:${esc(it.id)}">수정</button>${delBtn("item",it.id)}</div></div>`).join("")
     :`<p class="empty">등록된 아이템이 없어요. 왼쪽에서 첫 아이템을 등록해 보세요.</p>`;
   $("#sList").innerHTML=S.shows.length?[...S.shows].sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).map(s=>`<div class="arow">
     <div class="pv" style="background:${colorOf(s)}">${okUrl(s.posterUrl)?`<img src="${esc(s.posterUrl)}" alt="">`:""}</div>
@@ -497,6 +497,8 @@ document.addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;
   if(b.id==="close")return closeItem();
   if(b.dataset.share)return shareItem(b.dataset.share);
+  if(b.dataset.copyurl){const it=S.items.find(i=>i.id===b.dataset.copyurl);if(!it)return;const url=itemUrl(it);
+    try{await navigator.clipboard.writeText(url);toast("아이템 주소를 복사했어요. 새로 올린 아이템은 1시간쯤 뒤에 페이지가 생겨요")}catch(e){prompt("이 주소를 복사해 주세요",url)}return}
   if(b.dataset.id)return openItem(b.dataset.id);
   if(b.dataset.cat){F.cat=F.cat===b.dataset.cat?"":b.dataset.cat;renderCats();renderItems();if(F.cat)go();return}
   if(b.dataset.show){F={q:"",cat:"",show:b.dataset.show,person:""};$("#q").value="";renderCats();renderItems();go();return}
