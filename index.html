@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>어디꺼야?</title>
 <meta name="description" content="방송·유튜브에 나온 아이템, 어디 거인지 찾아드려요.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
@@ -126,6 +127,7 @@ section{padding-block:44px;border-top:1px solid var(--line)}
 .pr .was{font-weight:400;font-size:.8em;color:var(--muted)}
 .pr .off{color:var(--accent)}
 .warn{font-style:normal;color:#F0A8A0}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .item .who{font-size:14px;color:var(--muted)}
 .full{grid-column:1/-1}
 .tag{display:inline-block;font-size:11px;font-weight:500;padding:1px 6px;border-radius:8px;border:1px solid var(--line);color:var(--muted);vertical-align:middle;letter-spacing:0;text-transform:none;font-family:var(--body)}
@@ -229,7 +231,6 @@ footer .logo{font-size:20px;color:var(--ink)}
       <a href="#items">착장</a>
       <a href="#people" class="nav-hide">인물</a>
       <a href="#request" class="cta">제보</a>
-      <a href="#recent">최근 본<span class="n" id="recentCount" hidden>0</span></a>
       <a href="#admin" class="adm" id="admLink" hidden>관리<span class="n" id="repCount" hidden>0</span></a>
     </nav>
   </div>
@@ -237,7 +238,7 @@ footer .logo{font-size:20px;color:var(--ink)}
 
 <main class="wrap" id="site">
   <div class="hero" id="top">
-    <div class="hero-art"><img src="meerkat.png" alt=""></div>
+    <div class="hero-art"><img src="meerkat.webp" alt="" fetchpriority="high"></div>
     <div class="hero-in">
     <p class="eyebrow">방송 · 유튜브 제품 정찰대</p>
     <h1>어디꺼야?</h1>
@@ -254,7 +255,7 @@ footer .logo{font-size:20px;color:var(--ink)}
   </div>
 
   <section style="border-top:0">
-    <div class="sh"><div><h2>최근 업데이트</h2><p id="upCount"></p></div></div>
+    <div class="sh"><div><h2>최근 업데이트</h2><p id="upCount">착장이 새로 올라온 프로그램</p></div></div>
     <div class="tabs" id="platTabs"></div>
     <div class="ups" id="ups"></div>
   </section>
@@ -264,11 +265,6 @@ footer .logo{font-size:20px;color:var(--ink)}
       <button class="more" id="clearRecent" hidden>전체 지우기</button></div>
     <div id="recentList"></div>
   </div>
-
-  <section>
-    <div class="sh"><div><h2>새 회차 착장이 올라왔어요</h2><p>최근 착장이 추가된 프로그램</p></div></div>
-    <div id="newEps"></div>
-  </section>
 
   <section id="people">
     <div class="sh"><div><h2>인물로 찾기</h2><p>누가 입었는지 기억나면 바로</p></div></div>
@@ -299,6 +295,7 @@ footer .logo{font-size:20px;color:var(--ink)}
         </div>
         <label for="rDesc">어떤 장면이었나요?<textarea id="rDesc" required maxlength="600" placeholder="예: 카페 장면에서 입은 베이지 니트 가디건"></textarea></label>
         <label for="rLink">참고 링크 (선택)<input id="rLink" type="url" maxlength="400" placeholder="https://"></label>
+        <div class="hp" aria-hidden="true"><label for="rSite">웹사이트<input id="rSite" tabindex="-1" autocomplete="off"></label></div>
         <button class="primary" type="submit">제보하기</button>
       </form>
     </div>
@@ -312,15 +309,30 @@ footer .logo{font-size:20px;color:var(--ink)}
   </div>
   <div class="card" id="login" style="max-width:520px;margin-block:8px 48px" hidden>
     <h2>관리자 로그인</h2>
-    <p class="note" style="font-size:15px">관리자 이메일을 넣으면 로그인 링크를 보내드려요. 메일에서 링크를 누르면 이 화면으로 돌아와요.</p>
+    <p class="note" style="font-size:15px">비밀번호를 아직 정하지 않았다면 아래 "메일로 로그인 링크 받기"로 들어간 뒤, 관리자 화면에서 비밀번호를 정해 주세요.</p>
     <form id="loginForm">
-      <label for="loginEmail">이메일<input id="loginEmail" type="email" required autocomplete="email"></label>
-      <button class="primary" type="submit">로그인 링크 받기</button>
+      <label for="loginEmail">이메일<input id="loginEmail" type="email" required autocomplete="username"></label>
+      <label for="loginPw">비밀번호<input id="loginPw" type="password" autocomplete="current-password"></label>
+      <div class="btns">
+        <button class="primary" type="submit">로그인</button>
+        <button class="ghost" type="button" id="loginLink">메일로 로그인 링크 받기</button>
+      </div>
     </form>
     <p class="note" id="loginNote" role="status"></p>
   </div>
   <div id="admBody" hidden>
-  <div class="btns" style="justify-content:flex-end"><button class="ghost" type="button" id="logout">로그아웃</button></div>
+  <div class="btns" style="justify-content:flex-end">
+    <button class="ghost" type="button" id="pwToggle">비밀번호 설정</button>
+    <button class="ghost" type="button" id="logout">로그아웃</button>
+  </div>
+  <form class="card" id="pwForm" style="max-width:520px;margin-top:12px" hidden>
+    <h2>비밀번호 설정</h2>
+    <p class="note" style="font-size:15px">다음부터는 메일 없이 이메일과 비밀번호로 바로 로그인할 수 있어요. 8자 이상으로 정해 주세요.</p>
+    <input type="text" autocomplete="username" id="pwUser" hidden>
+    <label for="pwNew">새 비밀번호<input id="pwNew" type="password" minlength="8" required autocomplete="new-password"></label>
+    <label for="pwNew2">한 번 더<input id="pwNew2" type="password" minlength="8" required autocomplete="new-password"></label>
+    <button class="primary" type="submit">저장</button>
+  </form>
   <div class="adm-tabs" id="admTabs">
     <button class="chip" data-tab="items" aria-pressed="true">아이템</button>
     <button class="chip" data-tab="shows" aria-pressed="false">프로그램</button>
@@ -393,6 +405,7 @@ footer .logo{font-size:20px;color:var(--ink)}
 <footer class="wrap">
   <span class="logo">어디꺼<b>야?</b></span>
   <span>아이템 정보는 방송 화면을 보고 찾은 것이라 틀릴 수 있어요. </span>
+  <span>구매 링크 중 일부는 제휴 링크일 수 있으며, 이 링크로 구매하면 어디꺼야?가 일정 수수료를 받을 수 있어요.</span>
   <span>어디꺼야?는 상품 판매의 당사자가 아니에요. · <a href="#admin">관리자</a></span>
 </footer>
 

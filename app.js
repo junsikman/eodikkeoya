@@ -86,24 +86,15 @@ function renderCats(){
   const cnt={};S.items.forEach(i=>cnt[i.cat]=(cnt[i.cat]||0)+1);
   $("#catList").innerHTML=Object.entries(CATS).map(([k,v])=>`<button class="cat" data-cat="${k}" aria-pressed="${F.cat===k}">
    <svg viewBox="0 0 48 48" aria-hidden="true">${ICON[k]}</svg>
-   <b>${v}</b><small>${(cnt[k]||0).toLocaleString()}</small></button>`).join("");
+   <b>${v}</b>${cnt[k]?`<small>${cnt[k].toLocaleString()}</small>`:""}</button>`).join("");
 }
 function renderRecent(){
   const list=recent.map(id=>S.items.find(i=>i.id===id)).filter(Boolean);
-  $("#recentCount").hidden=!list.length;$("#recentCount").textContent=list.length;
   $("#clearRecent").hidden=!list.length;
   $("#recentList").innerHTML=list.length?`<div class="rail">${list.map(it=>`<button class="mini" data-id="${esc(it.id)}">${thumb(it)}<b>${esc(it.brand)}</b><span>${esc(it.name)}</span></button>`).join("")}</div>`
    :`<p class="empty">아직 본 아이템이 없어요. 아래 착장을 눌러보면 여기에 차례로 모여요.</p>`;
 }
 function countFor(sid){return S.items.filter(i=>i.showId===sid).length}
-function renderNewEps(){
-  if(!S.showsOk){$("#newEps").innerHTML="";return}
-  const list=[...S.shows].sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).slice(0,6);
-  $("#newEps").innerHTML=list.length?`<div class="rail">${list.map(s=>`<button class="show" data-show="${esc(s.id)}">
-   ${poster(s,`${s.ep?`<i class="new">NEW ${esc(s.ep)}</i>`:""}<i>${esc(s.platform)}</i>`)}
-   <span class="meta"><strong>${esc(s.title)}${sampleTag(s)}</strong>${s.ep?esc(s.ep)+" 포함 ":""}착장 ${countFor(s.id)}개</span></button>`).join("")}</div>`
-   :`<p class="empty">아직 등록된 프로그램이 없어요.</p>`;
-}
 function renderPeople(){
   const cnt={};S.items.forEach(i=>{if(i.person)cnt[i.person]=(cnt[i.person]||0)+1});
   const list=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
@@ -137,11 +128,12 @@ function renderUps(){
   if(!ps.includes(plat))plat="전체";
   $("#platTabs").innerHTML=S.shows.length?ps.map(p=>`<button class="chip" data-plat="${esc(p)}" aria-pressed="${p===plat}">${esc(p)} ${p==="전체"?S.shows.length:S.shows.filter(s=>s.platform===p).length}</button>`).join(""):"";
   const list=S.shows.filter(s=>plat==="전체"||s.platform===plat).sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||"")));
-  $("#upCount").textContent=S.showsOk?`프로그램 ${S.shows.length}개`:"";
-  $("#ups").innerHTML=list.map(s=>`<button class="show" data-show="${esc(s.id)}">${poster(s,`<i>${esc(s.platform)}</i>`)}
-   <span class="meta"><strong>${esc(s.title)}${sampleTag(s)}</strong>${md(s.updatedAt)} 업데이트</span></button>`).join("");
+  $("#upCount").textContent=S.showsOk?`착장이 새로 올라온 프로그램 ${S.shows.length}개`:"착장이 새로 올라온 프로그램";
+  $("#ups").innerHTML=!S.showsOk?"":list.length?list.map(s=>`<button class="show" data-show="${esc(s.id)}">${poster(s,`${s.ep?`<i class="new">NEW ${esc(s.ep)}</i>`:""}<i>${esc(s.platform)}</i>`)}
+   <span class="meta"><strong>${esc(s.title)}${sampleTag(s)}</strong>착장 ${countFor(s.id)}개 · ${md(s.updatedAt)} 업데이트</span></button>`).join("")
+   :`<p class="empty">아직 등록된 프로그램이 없어요.</p>`;
 }
-function renderSite(){renderCats();renderRecent();renderNewEps();renderPeople();renderItems();renderUps();renderShowSelect()}
+function renderSite(){renderCats();renderRecent();renderPeople();renderItems();renderUps();renderShowSelect()}
 
 /* ---------- item modal ---------- */
 function openItem(id){
@@ -181,15 +173,19 @@ async function loadReports(){
 
 /* ---------- report submit ---------- */
 $("#rCat").innerHTML=`<option value="">선택 안 함</option>`+Object.values(CATS).map(v=>`<option>${v}</option>`).join("");
+const formShownAt=Date.now();let lastReportAt=0;
 $("#reqForm").addEventListener("submit",async e=>{
   e.preventDefault();
   if(!sb){toast("지금은 제보를 보낼 수 없어요. 잠시 후 다시 시도해 주세요");return}
+  // 봇 차단: 숨김 칸을 채웠거나, 화면을 연 지 4초 안에 보내면 접수한 척만 해요
+  if($("#rSite").value||Date.now()-formShownAt<4000){e.target.reset();toast("제보가 접수됐어요. 확인 후 등록할게요");return}
+  if(Date.now()-lastReportAt<30000){toast("제보는 30초에 한 번 보낼 수 있어요. 잠시 후 다시 보내 주세요");return}
   const btn=e.target.querySelector("button[type=submit]");btn.disabled=true;
   const r={show:$("#rShow").value.trim(),ep:$("#rEp").value.trim(),who:$("#rWho").value.trim(),
     cat:$("#rCat").value,descr:$("#rDesc").value.trim(),link:$("#rLink").value.trim()};
   const {error}=await sb.from("reports").insert(r);
-  if(error)toast("제보를 보내지 못했어요. 잠시 후 다시 시도해 주세요");
-  else{e.target.reset();toast("제보가 접수됐어요. 확인 후 등록할게요")}
+  if(error)toast(/limit|duplicate/i.test(error.message||"")?"같은 제보가 이미 있거나 제보가 너무 많아요. 잠시 후 다시 보내 주세요":"제보를 보내지 못했어요. 잠시 후 다시 시도해 주세요");
+  else{lastReportAt=Date.now();e.target.reset();toast("제보가 접수됐어요. 확인 후 등록할게요")}
   btn.disabled=false;
 });
 
@@ -325,10 +321,32 @@ async function applyAuth(session){
 }
 $("#loginForm").addEventListener("submit",async e=>{
   e.preventDefault();if(!sb)return;
+  const email=$("#loginEmail").value.trim(),password=$("#loginPw").value;
+  if(!password){toast("비밀번호를 넣어 주세요. 아직 없다면 메일로 로그인 링크를 받아 주세요");$("#loginPw").focus();return}
   const btn=e.target.querySelector("button[type=submit]");btn.disabled=true;
-  const {error}=await sb.auth.signInWithOtp({email:$("#loginEmail").value.trim(),
-    options:{emailRedirectTo:location.origin+location.pathname+"#admin"}});
-  toast(error?"로그인 링크를 보내지 못했어요. 잠시 후 다시 시도해 주세요":"메일함에서 로그인 링크를 눌러 주세요");
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error)toast(/invalid/i.test(error.message||"")?"이메일이나 비밀번호가 맞지 않아요":"로그인하지 못했어요. 잠시 후 다시 시도해 주세요");
+  else $("#loginPw").value="";
+  btn.disabled=false;
+});
+$("#loginLink").addEventListener("click",async e=>{
+  if(!sb)return;
+  const email=$("#loginEmail").value.trim();
+  if(!$("#loginEmail").checkValidity()||!email){toast("이메일을 먼저 넣어 주세요");$("#loginEmail").focus();return}
+  e.target.disabled=true;
+  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname+"#admin"}});
+  toast(error?(/rate|limit|seconds/i.test(error.message||"")?"메일을 너무 자주 요청했어요. 한 시간쯤 뒤에 다시 시도해 주세요":"로그인 링크를 보내지 못했어요. 잠시 후 다시 시도해 주세요"):"메일함에서 로그인 링크를 눌러 주세요");
+  e.target.disabled=false;
+});
+$("#pwToggle").addEventListener("click",()=>{$("#pwForm").hidden=!$("#pwForm").hidden;if(!$("#pwForm").hidden)$("#pwNew").focus()});
+$("#pwForm").addEventListener("submit",async e=>{
+  e.preventDefault();if(!sb)return;
+  const a=$("#pwNew").value,b=$("#pwNew2").value;
+  if(a!==b){toast("두 비밀번호가 달라요");return}
+  const btn=e.target.querySelector("button[type=submit]");btn.disabled=true;
+  const {error}=await sb.auth.updateUser({password:a});
+  if(error)toast(/reauth|recent/i.test(error.message||"")?"보안을 위해 메일 링크로 다시 로그인한 뒤 바로 설정해 주세요":"비밀번호를 저장하지 못했어요: "+error.message);
+  else{e.target.reset();e.target.hidden=true;toast("비밀번호를 저장했어요. 다음부터 이메일과 비밀번호로 로그인하세요")}
   btn.disabled=false;
 });
 $("#logout").addEventListener("click",async()=>{if(sb)await sb.auth.signOut();S.owner=false;S.reports=[];location.hash="";route()});
