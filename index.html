@@ -317,7 +317,7 @@ footer .logo{font-size:20px;color:var(--ink)}
       <form id="reqForm">
         <div class="row">
           <label for="rShow">프로그램<input id="rShow" required maxlength="80" placeholder="예: 봄날의 계약서"></label>
-          <label for="rEp">회차<input id="rEp" maxlength="30" placeholder="예: 7화"></label>
+          <label for="rEp">회차 (제목)<input id="rEp" maxlength="100" placeholder="예: 7화 또는 영상 제목"></label>
         </div>
         <div class="row">
           <label for="rWho">인물<input id="rWho" maxlength="40" placeholder="예: 한서윤"></label>
@@ -392,7 +392,7 @@ footer .logo{font-size:20px;color:var(--ink)}
         <p class="note" id="iShowNote">처음 입력하는 프로그램은 저장할 때 자동으로 추가돼요.</p>
         <label for="iPerson">인물 *<input id="iPerson" required maxlength="40" list="personList" placeholder="목록에서 고르거나 새 이름 입력"></label>
         <p class="note" id="iPersonNote">목록에서 고르거나 새 이름을 쓰면 인물로 추가돼요.</p>
-        <label for="iEp">회차<input id="iEp" maxlength="30" placeholder="예: 12화"></label>
+        <label for="iEp">회차 (제목)<input id="iEp" maxlength="100" placeholder="예: 12화 또는 유튜브 영상 제목"></label>
         <label for="iVerify">확인 상태 *<select id="iVerify" required>
           <option value="official">정품 확인 — 같은 제품이 확실해요</option>
           <option value="similar">유사품 — 비슷한 제품을 찾았어요</option>
@@ -424,7 +424,7 @@ footer .logo{font-size:20px;color:var(--ink)}
         <label for="sTitle">프로그램명 *<input id="sTitle" required maxlength="80"></label>
         <div class="row">
           <label for="sPlat">플랫폼 *<select id="sPlat" required></select></label>
-          <label for="sEp">최신 회차<input id="sEp" maxlength="30" placeholder="예: 12화"></label>
+          <label for="sEp">최신 회차 (제목)<input id="sEp" maxlength="100" placeholder="예: 12화 또는 영상 제목"></label>
         </div>
         <label for="sImg">포스터 이미지<input id="sImg" type="file" accept="image/*"></label>
         <div class="curimg" id="sCur" hidden></div>
