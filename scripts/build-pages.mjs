@@ -16,7 +16,7 @@ const won = n => (typeof n === "number" && isFinite(n) ? n.toLocaleString("ko-KR
 const md = iso => { const d = new Date(iso); return isNaN(d) ? "" : `${d.getMonth() + 1}월 ${d.getDate()}일`; };
 const httpUrl = u => typeof u === "string" && /^https?:\/\//i.test(u);
 const short = id => String(id).slice(0, 8);
-const CATS = { top: "상의", outer: "아우터", bottom: "하의", dress: "원피스", bag: "가방", hat: "모자", shoes: "신발", jewelry: "주얼리", food: "식품", interior: "인테리어" };
+const CATS = { top: "상의", outer: "아우터", bottom: "하의", dress: "원피스", bag: "가방", hat: "모자", shoes: "신발", jewelry: "주얼리", beauty: "뷰티", food: "식품", interior: "인테리어" };
 const VERIFY = { official: "정품 확인", similar: "유사품", guess: "추정" };
 const SHOPS = [[/wconcept\.co\.kr$/, "W컨셉"], [/musinsa\.com$/, "무신사"], [/29cm\.co\.kr$/, "29CM"], [/coupang\.com$/, "쿠팡"], [/(smartstore|brand|shopping)\.naver\.com$/, "네이버"], [/zigzag\.kr$/, "지그재그"], [/a-bly\.com$/, "에이블리"], [/kream\.co\.kr$/, "KREAM"], [/ssg\.com$/, "SSG"], [/lotteon\.com$/, "롯데온"], [/hago\.kr$/, "하고"], [/wadiz\.kr$/, "와디즈"]];
 const shopName = url => { try { const h = new URL(url).hostname.replace(/^(www|m)\./, ""); const f = SHOPS.find(([re]) => re.test(h)); return f ? f[1] : h; } catch { return "구매처"; } };

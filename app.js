@@ -1,4 +1,4 @@
-const CATS={top:"상의",outer:"아우터",bottom:"하의",dress:"원피스",bag:"가방",hat:"모자",shoes:"신발",jewelry:"주얼리",food:"식품",interior:"인테리어"};
+const CATS={top:"상의",outer:"아우터",bottom:"하의",dress:"원피스",bag:"가방",hat:"모자",shoes:"신발",jewelry:"주얼리",beauty:"뷰티",food:"식품",interior:"인테리어"};
 const PLATS=["Netflix","TVING","Wavve","YouTube","Disney+","coupangplay","KBS","MBC","SBS","JTBC","tvN","기타"];
 const SHAPE={
  top:'<path d="M30 22 42 15Q50 24 58 15L70 22 85 37 74 47 68 41V85H32V41L26 47 15 37Z"/>',
@@ -9,6 +9,7 @@ const SHAPE={
  hat:'<path d="M20 62Q20 28 50 28Q80 28 80 62Z"/><path d="M14 62H86Q86 72 70 72H18Q12 72 14 62Z"/>',
  shoes:'<path d="M12 70V48Q12 42 20 42L40 44Q46 56 62 58L82 62Q90 64 90 72V76H12Z"/>',
  jewelry:'<circle cx="50" cy="58" r="22" fill="none" stroke-width="7"/><path d="M42 30 50 20 58 30 50 40Z"/>',
+ beauty:'<rect x="36" y="50" width="28" height="38" rx="3"/><path d="M40 50V28L60 16V50Z"/>',
  food:'<path d="M18 40H70V60Q70 82 44 82Q18 82 18 60Z"/><path d="M70 46Q86 46 86 57Q86 68 70 67" fill="none" stroke-width="5"/><path d="M34 30Q30 22 36 16M48 30Q44 22 50 16" fill="none"/>',
  interior:'<path d="M34 14H66L80 48H20Z"/><path d="M50 48V82" fill="none" stroke-width="6"/><path d="M30 84H70" fill="none" stroke-width="7" stroke-linecap="round"/>'
 };
@@ -22,6 +23,7 @@ const ICON={
  hat:'<path d="M14 30Q13.5 16 19 14.5Q24 18 29 14.5Q34.5 16 34 30"/><path d="M4 31Q24 25.5 44 31Q24 38 4 31Z"/><path class="au" d="M14.2 26.5Q24 28.8 33.8 26.5"/>',
  shoes:'<path d="M5 36Q5 31 11 31L21 32Q29 32 35 23L40 17Q43.5 15 43.5 19V27"/><path d="M5 36Q22 38.5 37 30L43.5 27"/><path class="au" d="M42.5 27.5 39.5 41"/>',
  jewelry:'<circle cx="24" cy="32" r="10"/><path class="au" d="M18 15 21 10H27L30 15 24 22ZM18 15H30M21 10 24 15 27 10M24 15V22"/>',
+ beauty:'<path d="M18 24H30V42H18Z"/><path class="au" d="M20 24V13L28 8V24"/><path d="M18 30H30"/>',
  food:'<path d="M9 12Q9 22 24 22Q39 22 39 12Z"/><path d="M24 22V38M15 40Q24 37 33 40"/><circle class="auf" cx="20" cy="16" r=".9"/><circle class="auf" cx="27" cy="15" r=".9"/><circle class="auf" cx="24" cy="18.5" r=".9"/>',
  interior:'<path class="au" d="M24 8Q20.5 13.5 24 17Q27.5 13.5 24 8Z"/><path d="M20 20H28V36H20ZM24 17V20"/><path d="M13 36H35Q35 41.5 24 41.5Q13 41.5 13 36Z"/>'
 };
