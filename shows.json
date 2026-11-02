@@ -1,0 +1,20 @@
+[
+ {
+  "id": "6a8a0c30-9c69-4e2d-bd36-3c1af0c07e97",
+  "title": "언니네 산지직송3",
+  "platform": "tvN",
+  "ep": "12화",
+  "poster_url": "https://zsguwckfbnglcwubmsor.supabase.co/storage/v1/object/public/images/mvyysjnp-tfu7n2.webp",
+  "created_at": "2026-10-29T15:00:21.443566+00:00",
+  "updated_at": "2026-10-29T15:00:21.443566+00:00"
+ },
+ {
+  "id": "32bc4d24-dd9f-4b38-95f1-26bccc56dd8a",
+  "title": "나혼자산다",
+  "platform": "MBC",
+  "ep": "400화",
+  "poster_url": "",
+  "created_at": "2026-10-29T15:11:00.278091+00:00",
+  "updated_at": "2026-10-29T15:11:00.278091+00:00"
+ }
+]

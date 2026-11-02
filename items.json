@@ -1,0 +1,58 @@
+[
+ {
+  "id": "d919cb25-460f-41ed-9d46-6345937c1b59",
+  "brand": "논로컬 (NONLOCAL)",
+  "name": "리본 스트링 린넨 버킷햇 - Light Pink",
+  "cat": "hat",
+  "price": 41300,
+  "person": "염정아",
+  "show_id": "6a8a0c30-9c69-4e2d-bd36-3c1af0c07e97",
+  "ep": "12화",
+  "scene": "",
+  "buy_url": "https://www.wconcept.co.kr/Product/308578623",
+  "image_url": "https://zsguwckfbnglcwubmsor.supabase.co/storage/v1/object/public/images/mvto718b-r3pvoz.jpg",
+  "created_at": "2026-10-29T15:00:21.50865+00:00",
+  "updated_at": "2026-11-02T06:44:56.446+00:00",
+  "list_price": 59000,
+  "coupon_price": 31594,
+  "price_checked_at": "2026-11-02T06:38:33.508+00:00",
+  "price_check_failed": false,
+  "person_id": "79157c02-8e28-4d1f-82be-574b1caf878b",
+  "verify": "official",
+  "scene_time": "",
+  "links": [
+   {
+    "aff": false,
+    "src": "manual",
+    "url": "https://brand.naver.com/nonlocal/products/13526639915?nl-query=%EB%85%BC%EB%A1%9C%EC%BB%AC+%28NONLOCAL%29+%EB%A6%AC%EB%B3%B8+%EC%8A%A4%ED%8A%B8%EB%A7%81+%EB%A6%B0%EB%84%A8+%EB%B2%84%ED%82%B7%ED%96%87+-+Light+Pink&nl-ts-pid=jXlYssqosZqiGH7PbLC-333213&NaPm=ct%3Dmvyvwcnk%7Cci%3D34b47e3180bdf799cf4353bdffe52ed7f2c0375b%7Ctr%3Dsls%7Csn%3D824340%7Chk%3D024145391d6b44a1109272a0c44cd434ab3afe31",
+    "shop": "논로컬",
+    "price": 59000
+   }
+  ],
+  "buy_affiliate": true
+ },
+ {
+  "id": "f34328c4-f71b-4899-9a63-70d4a4482e15",
+  "brand": "트라이엄프",
+  "name": "Triple Sports Mesh Jacket Black / White / Red",
+  "cat": "outer",
+  "price": 30000,
+  "person": "구성환",
+  "show_id": "32bc4d24-dd9f-4b38-95f1-26bccc56dd8a",
+  "ep": "400화",
+  "scene": "",
+  "buy_url": "",
+  "image_url": "https://zsguwckfbnglcwubmsor.supabase.co/storage/v1/object/public/images/mvtokqaa-f17ilq.jpg",
+  "created_at": "2026-10-29T15:11:00.361957+00:00",
+  "updated_at": "2026-11-02T06:19:13.222+00:00",
+  "list_price": null,
+  "coupon_price": null,
+  "price_checked_at": null,
+  "price_check_failed": false,
+  "person_id": "c3346bed-13ef-4765-bcef-2401113d269a",
+  "verify": "official",
+  "scene_time": "",
+  "links": [],
+  "buy_affiliate": false
+ }
+]
