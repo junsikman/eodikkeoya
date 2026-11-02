@@ -299,7 +299,7 @@ function readLinks(){
 }
 $("#iAddLink").addEventListener("click",()=>{$("#iLinks").appendChild(linkRow());$("#iAddLink").hidden=$("#iLinks").children.length>=5;$("#iLinks").lastElementChild.querySelector(".lurl").focus()});
 $("#iLinks").addEventListener("click",e=>{const b=e.target.closest(".lrm");if(!b)return;b.closest(".lrow").remove();$("#iAddLink").hidden=false});
-let editI=null,editS=null,iImg=null,sImg=null,armed=null;
+let editI=null,editS=null,iImg=null,sImg=null,armed=null,fetchedImg=null,fetchedList=null;
 function curImg(box,url,which){
   if(!okUrl(url)){$(box).hidden=true;$(box).innerHTML="";return}
   $(box).hidden=false;$(box).innerHTML=`<img src="${esc(url)}" alt=""><span class="note">현재 이미지</span><button type="button" class="ghost" data-rmimg="${which}">이미지 빼기</button>`;
@@ -334,7 +334,7 @@ function renderAdmin(){
   const n=S.reports.length;
   ["#repCount","#repCount2"].forEach(s=>{$(s).hidden=!n;$(s).textContent=n});
 }
-function resetIForm(){editI=null;iImg=null;$("#iForm").reset();setLinks([]);syncPersonNote();curImg("#iCur");$("#iFormTitle").textContent="아이템 등록";$("#iSubmit").textContent="등록하기";$("#iCancel").hidden=true;renderShowSelect()}
+function resetIForm(){editI=null;iImg=null;fetchedImg=null;fetchedList=null;$("#iForm").reset();setLinks([]);syncPersonNote();curImg("#iCur");$("#iFormTitle").textContent="아이템 등록";$("#iSubmit").textContent="등록하기";$("#iCancel").hidden=true;renderShowSelect()}
 function resetSForm(){editS=null;sImg=null;$("#sForm").reset();curImg("#sCur");$("#sFormTitle").textContent="프로그램 등록";$("#sSubmit").textContent="등록하기";$("#sCancel").hidden=true}
 async function shrink(f){
   // 큰 사진은 올리기 전에 가로세로 최대 1200px, webp로 줄여요
@@ -380,7 +380,8 @@ $("#iForm").addEventListener("submit",async e=>{
       person:person.name,person_id:person.id,verify:$("#iVerify").value,
       show_id:show.id,ep,scene:$("#iScene").value.trim(),
       buy_url:$("#iUrl").value.trim(),buy_affiliate:$("#iAff").checked,links:readLinks(),
-      image_url:up||(iImg===false?"":(prev.imageUrl||"")),updated_at:now};
+      image_url:up||fetchedImg||(iImg===false?"":(prev.imageUrl||"")),updated_at:now};
+    if(fetchedList)doc.list_price=fetchedList;
     if(editI)must(await sb.from("items").update(doc).eq("id",editI));else must(await sb.from("items").insert(doc));
     if(!made&&!editI)must(await sb.from("shows").update({updated_at:now,...(ep?{ep}:{})}).eq("id",show.id));
     toast((editI?"아이템을 수정했어요":"아이템을 등록했어요")+(made?` · ‘${title}’ 프로그램도 추가했어요`:""));resetIForm();
@@ -404,6 +405,29 @@ $("#sForm").addEventListener("submit",async e=>{
   btn.disabled=false;
 });
 $("#iCancel").addEventListener("click",resetIForm);
+$("#iFetch").addEventListener("click",async e=>{
+  const url=$("#iUrl").value.trim();
+  if(!/^https?:\/\//i.test(url)){toast("상품 링크를 먼저 붙여 넣어 주세요");$("#iUrl").focus();return}
+  if(!sb||!S.owner)return;
+  const btn=e.target;btn.disabled=true;btn.textContent="불러오는 중…";$("#iFetchNote").textContent="쇼핑몰에서 정보를 가져오는 중이에요. 몇 초 걸려요.";
+  try{
+    const {data,error}=await sb.functions.invoke("fetch-product",{body:{url}});
+    if(error)throw error;
+    if(!data||data.error){$("#iFetchNote").textContent=(data&&data.error)||"정보를 가져오지 못했어요. 직접 입력해 주세요.";return}
+    const filled=[];
+    if(data.brand){$("#iBrand").value=data.brand;filled.push("브랜드")}
+    if(data.name){$("#iName").value=data.name;filled.push("상품명")}
+    if(data.price){$("#iPrice").value=data.price;filled.push("가격")}
+    if(data.cat&&CATS[data.cat]){$("#iCat").value=data.cat;filled.push("분류("+CATS[data.cat]+")")}
+    fetchedList=data.listPrice||null;
+    if(data.imageUrl){fetchedImg=data.imageUrl;iImg=null;$("#iImg").value="";curImg("#iCur",data.imageUrl,"i");filled.push("이미지")}
+    $("#iFetchNote").textContent=filled.length?`채운 항목: ${filled.join(", ")}. 내용을 확인하고 인물·프로그램·회차를 골라 주세요.`:"가져온 정보가 없어요. 직접 입력해 주세요.";
+  }catch(err){
+    console.error(err);
+    $("#iFetchNote").textContent=/not found|404|Failed to send|FunctionsFetchError|FunctionsHttpError/i.test(String(err&&(err.name+err.message)))
+      ?"불러오기 기능이 아직 설치되지 않았어요(수파베이스 함수 fetch-product).":"정보를 가져오지 못했어요. 직접 입력해 주세요.";
+  }finally{btn.disabled=false;btn.textContent="링크로 불러오기"}
+});
 $("#pList").addEventListener("submit",async e=>{
   const f=e.target.closest(".prow");if(!f)return;e.preventDefault();
   const id=f.dataset.pid,name=f.querySelector(".pname").value.trim(),cur=S.people.find(p=>p.id===id);
@@ -519,7 +543,7 @@ document.addEventListener("click",async e=>{
   if(b.id==="resetFilter"){F={q:"",cat:"",show:"",person:""};$("#q").value="";renderCats();renderItems();return}
   if(b.id==="clearRecent"){recent=[];saveRecent();renderRecent();toast("최근 본 아이템을 지웠어요");return}
   if(b.dataset.tab){tab=b.dataset.tab;armed=null;renderAdmin();return}
-  if(b.dataset.rmimg){if(b.dataset.rmimg==="i"){iImg=false;curImg("#iCur")}else{sImg=false;curImg("#sCur")}return}
+  if(b.dataset.rmimg){if(b.dataset.rmimg==="i"){iImg=false;fetchedImg=null;curImg("#iCur")}else{sImg=false;curImg("#sCur")}return}
   if(b.dataset.edit){const [k,id]=b.dataset.edit.split(":");
     if(k==="item"){const it=S.items.find(i=>i.id===id);if(it)fillItem(it)}else{const s=S.shows.find(x=>x.id===id);if(s)fillShow(s)}return}
   if(b.dataset.del){

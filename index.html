@@ -140,6 +140,7 @@ section{padding-block:44px;border-top:1px solid var(--line)}
 .pr .off{color:var(--accent)}
 .warn{font-style:normal;color:#F0A8A0}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.fetchrow{display:flex;gap:8px;align-items:center}.fetchrow input{flex:1;min-width:0}.fetchrow button{white-space:nowrap}
 .share{position:absolute;top:10px;left:10px;z-index:2;height:40px;padding:0 14px;border-radius:999px;border:0;background:rgba(0,0,0,.5);color:#fff;font-size:14px;font-weight:500}
 .share:hover{background:rgba(0,0,0,.7)}
 .vf{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;vertical-align:middle;letter-spacing:0;border:1px solid var(--line);color:var(--muted)}
@@ -373,6 +374,9 @@ footer .logo{font-size:20px;color:var(--ink)}
     <div class="card">
       <h2 id="iFormTitle">아이템 등록</h2>
       <form id="iForm">
+        <label for="iUrl">대표 구매 링크 (W컨셉이면 가격을 매일 자동 확인해요)</label>
+        <div class="fetchrow"><input id="iUrl" type="url" maxlength="600" placeholder="https:// 상품 링크를 붙이고 오른쪽 버튼을 누르세요"><button type="button" class="ghost" id="iFetch">링크로 불러오기</button></div>
+        <p class="note" id="iFetchNote">링크를 붙이고 불러오기를 누르면 브랜드·상품명·가격·분류·이미지를 채워요. 인물·프로그램·회차는 직접 골라 주세요.</p>
         <div class="row">
           <label for="iBrand">브랜드 *<input id="iBrand" required maxlength="60"></label>
           <label for="iName">상품명 *<input id="iName" required maxlength="120"></label>
@@ -395,7 +399,6 @@ footer .logo{font-size:20px;color:var(--ink)}
           <option value="guess" selected>추정 — 확인 중이에요</option>
         </select></label>
         <label for="iScene">장면 설명<textarea id="iScene" maxlength="600" placeholder="어느 장면에서 어떻게 입었는지"></textarea></label>
-        <label for="iUrl">대표 구매 링크 (W컨셉이면 가격을 매일 자동 확인해요)<input id="iUrl" type="url" maxlength="600" placeholder="https://"></label>
         <label class="laff" style="font-weight:500"><input type="checkbox" id="iAff"> 대표 링크가 제휴 링크예요</label>
         <fieldset class="links"><legend>다른 구매처 (최대 5개 · 가격은 매일 자동 확인, 안 되는 쇼핑몰은 직접 입력)</legend>
           <div id="iLinks"></div>
