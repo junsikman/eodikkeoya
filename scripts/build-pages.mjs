@@ -163,6 +163,8 @@ await writeFile(`${OUT}/sitemap.xml`, `<?xml version="1.0" encoding="UTF-8"?>\n<
 
 // 첫 화면 index.html에도 주소를 맞춰 넣어요
 const idx = await readFile(`${OUT}/index.html`, "utf8");
-await writeFile(`${OUT}/index.html`, idx.replaceAll("__SITE_URL__", BASE));
+// 새 버전이 바로 보이도록 app.js 주소에 버전 번호를 붙여요(브라우저가 예전 파일을 쓰지 않게)
+const ver = (process.env.GITHUB_SHA || String(Date.now())).slice(0, 8);
+await writeFile(`${OUT}/index.html`, idx.replaceAll("__SITE_URL__", BASE).replace('src="app.js"', `src="app.js?v=${ver}"`));
 
 console.log(`아이템 페이지 ${seen.size}개, 사이트맵 주소 ${urls.length}개를 만들었어요.`);
