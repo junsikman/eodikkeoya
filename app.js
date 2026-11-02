@@ -94,7 +94,7 @@ function topPriceHtml(it){
 const vfTag=it=>`<span class="vf vf-${esc(it.verify)}">${VERIFY[it.verify]||"추정"}</span>`;
 const sceneText=it=>it.ep||"";
 const toShow=r=>({id:r.id,title:r.title,platform:r.platform,ep:r.ep,posterUrl:r.poster_url,createdAt:r.created_at,updatedAt:r.updated_at});
-const toReport=r=>({id:r.id,show:r.show,ep:r.ep,who:r.who,cat:r.cat,desc:r.descr,link:r.link,at:r.created_at});
+const toReport=r=>({id:r.id,show:r.show,ep:r.ep,who:r.who,cat:r.cat,desc:r.descr,link:r.link,at:r.created_at,auto:r.source==="auto",brand:r.brand||"",name:r.name||""});
 let F={q:"",cat:"",show:"",person:""}, plat="전체", tab="items";
 const showOf=id=>S.shows.find(s=>s.id===id)||{title:"알 수 없는 프로그램",platform:"",color:"#8A7A70"};
 const byNew=(a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||""));
@@ -327,11 +327,11 @@ function renderAdmin(){
     <button class="ghost" type="submit">이름 저장</button>${pc[p.id]?"":delBtn("person",p.id)}</form>`).join("")
     :`<p class="empty">아직 등록된 인물이 없어요. 아이템을 등록하면 인물이 여기에 모여요.</p>`;
   $("#rList").innerHTML=S.reports.length?S.reports.map(r=>`<div class="rep">
-    <div class="top"><b>${esc(r.show)}</b><span>${esc(r.ep||"")}${r.who?" · "+esc(r.who):""}${r.cat?" · "+esc(r.cat):""} · ${md(r.at)}</span></div>
+    <div class="top"><b>${r.auto?`<em class="auto">자동 수집</em> `:""}${esc(r.show)}</b><span>${esc(r.ep||"")}${r.who?" · "+esc(r.who):""}${r.cat?" · "+esc(r.cat):""} · ${md(r.at)}</span></div>
     <p>${esc(r.desc)}</p>
     ${okUrl(r.link)&&/^https?:/i.test(r.link)?`<a class="note" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">${esc(r.link)}</a>`:""}
     <div class="btns"><button class="ghost" data-fromrep="${esc(r.id)}">이 제보로 아이템 등록</button>
-    <button class="ghost danger" data-done="${esc(r.id)}">처리 완료</button></div></div>`).join("")
+    <button class="ghost danger" data-done="${esc(r.id)}">${r.auto?"틀림·버리기":"처리 완료"}</button></div></div>`).join("")
     :`<p class="empty">아직 들어온 제보가 없어요. 방문자가 제보를 보내면 여기에 쌓여요.</p>`;
   const n=S.reports.length;
   ["#repCount","#repCount2"].forEach(s=>{$(s).hidden=!n;$(s).textContent=n});
@@ -558,10 +558,12 @@ document.addEventListener("click",async e=>{
     return}
   if(b.dataset.fromrep){const r=S.reports.find(x=>x.id===b.dataset.fromrep);if(!r)return;
     tab="items";renderAdmin();resetIForm();
-    $("#iPerson").value=r.who||"";$("#iEp").value=r.ep||"";$("#iScene").value=r.desc||"";
+    $("#iPerson").value=r.who||"";$("#iEp").value=r.ep||"";$("#iScene").value=r.auto?"":(r.desc||"");
+    if(r.brand)$("#iBrand").value=r.brand;if(r.name)$("#iName").value=r.name;
     const ck=Object.keys(CATS).find(k=>CATS[k]===r.cat);if(ck)$("#iCat").value=ck;
     const s=findShow(r.show);$("#iShow").value=s?s.title:(r.show||"");syncShowNote();
-    toast(s?"제보 내용을 채웠어요. 브랜드와 상품명을 넣어 주세요":"제보 내용을 채웠어요. 새 프로그램이라 플랫폼도 골라 주세요");
+    toast(r.auto?(s?"자동 수집 내용을 채웠어요. 출처 글과 맞는지 확인하고 구매 링크를 넣어 주세요":"자동 수집 내용을 채웠어요. 새 프로그램이라 플랫폼도 골라 주세요")
+      :s?"제보 내용을 채웠어요. 브랜드와 상품명을 넣어 주세요":"제보 내용을 채웠어요. 새 프로그램이라 플랫폼도 골라 주세요");
     $("#iForm").scrollIntoView({behavior:"smooth",block:"start"});return}
   if(b.dataset.done){b.disabled=true;
     try{must(await sb.from("reports").delete().eq("id",b.dataset.done));await loadReports();renderAdmin();toast("처리 완료로 제보함에서 뺐어요")}
