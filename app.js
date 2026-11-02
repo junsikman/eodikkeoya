@@ -280,7 +280,7 @@ function linkRow(l={}){
   const d=document.createElement("div");d.className="lrow";
   d.innerHTML=`<input class="lshop" maxlength="20" placeholder="쇼핑몰" aria-label="쇼핑몰 이름" value="${esc(l.shop||"")}">
    <input class="lurl" type="url" maxlength="600" placeholder="https://" aria-label="구매 링크" value="${esc(l.url||"")}">
-   <input class="lprice" type="number" min="0" step="10" placeholder="가격(원)" aria-label="이 구매처 가격(원)" value="${hasNum(l.price)?l.price:""}">
+   <input class="lprice" type="number" min="0" step="1" placeholder="가격(원)" aria-label="이 구매처 가격(원)" value="${hasNum(l.price)?l.price:""}">
    <label class="laff"><input type="checkbox" class="lafc"${l.aff?" checked":""}> 제휴</label>
    <button type="button" class="ghost lrm" aria-label="이 구매처 빼기">빼기</button>`;
   return d;
