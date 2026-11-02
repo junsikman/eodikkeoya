@@ -2,7 +2,7 @@ name: 착장 정보 자동 수집
 
 on:
   schedule:
-    - cron: "7 22 * * *" # 매일 한국 시간 아침 7시 7분
+    - cron: "7 20 * * *" # 매일 한국 시간 새벽 5시 7분
   workflow_dispatch: # Actions 화면에서 직접 실행할 수도 있어요
 
 permissions:

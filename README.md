@@ -26,7 +26,7 @@
 
 ## 착장 정보 자동 수집
 
-`.github/workflows/collect-finds.yml`이 매일 아침 7시쯤 `scripts/collect-finds.mjs`를 실행해요.
+`.github/workflows/collect-finds.yml`이 매일 새벽 5시쯤 `scripts/collect-finds.mjs`를 실행해요.
 등록된 프로그램 이름으로 "○○ 착용", "○○ 옷 브랜드"를 네이버 뉴스·블로그에서 찾고, 올라마(무료 AI)가 글에 적힌 출연자·브랜드·상품명을 뽑아 **제보함**에 "자동 수집"으로 넣어요. 사이트에 바로 올라가지 않아요.
 
 - AI가 뽑은 브랜드·상품명이 실제 글에 없으면 버려요(지어낸 정보 막기). 이미 등록된 아이템도 건너뛰어요.
