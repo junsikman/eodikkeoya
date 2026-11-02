@@ -30,6 +30,16 @@ const $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>typeof u==="string"&&/^(https?:\/\/|\/)/i.test(u);
 const won=n=>typeof n==="number"&&isFinite(n)?n.toLocaleString("ko-KR")+"원":"가격 정보 없음";
+const hasNum=n=>typeof n==="number"&&isFinite(n);
+const offPct=it=>hasNum(it.listPrice)&&hasNum(it.price)&&it.listPrice>it.price?Math.round((1-it.price/it.listPrice)*100):0;
+function priceHtml(it){
+  const p=offPct(it);
+  return p?`<s class="was">${won(it.listPrice)}</s> <b class="off">${p}%</b> ${won(it.price)}`:won(it.price);
+}
+function priceNote(it){
+  if(it.priceCheckedAt)return `${md(it.priceCheckedAt)} 판매처 기준 · 가격은 바뀔 수 있어요`;
+  return "등록할 때 가격이에요. 판매처에서 확인해 주세요";
+}
 const TONES=["#C26A55","#4F7A6B","#D2A45A","#5D6FA8","#5E9AB0","#8C4E8E","#A87A5C","#3E5470","#7FA35C","#B4566A","#8A5A3A","#6E7F94"];
 const toneOf=s=>{let h=0;for(const ch of String(s||""))h=(h*31+ch.charCodeAt(0))>>>0;return TONES[h%TONES.length]};
 const hex=c=>/^#[0-9a-f]{6}$/i.test(c||"")?c:"#C9A88A";
@@ -46,7 +56,7 @@ const SUPABASE_URL="https://zsguwckfbnglcwubmsor.supabase.co";
 const SUPABASE_KEY="sb_publishable_sgNoVED5UXmYv85QtPZSlA_L8XzIpay";
 const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:"pkce",detectSessionInUrl:true,persistSession:true}}):null;
 const S={items:[],shows:[],reports:[],itemsOk:false,showsOk:false,owner:false,noDb:false};
-const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,person:r.person,showId:r.show_id,ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
+const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,showId:r.show_id,ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toShow=r=>({id:r.id,title:r.title,platform:r.platform,ep:r.ep,posterUrl:r.poster_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toReport=r=>({id:r.id,show:r.show,ep:r.ep,who:r.who,cat:r.cat,desc:r.descr,link:r.link,at:r.created_at});
 let F={q:"",cat:"",show:"",person:""}, plat="전체", tab="items";
@@ -118,7 +128,7 @@ function renderItems(){
   if(!S.itemsOk&&!S.noDb){$("#itemGrid").innerHTML="";return}
   $("#itemGrid").innerHTML=S.noDb?`<p class="empty full">착장 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>`
    :list.length?list.map(it=>`<button class="item" data-id="${esc(it.id)}">${thumb(it)}
-   <span class="br">${esc(it.brand)}${sampleTag(it)}</span><span class="nm">${esc(it.name)}</span><span class="pr">${won(it.price)}</span>
+   <span class="br">${esc(it.brand)}${sampleTag(it)}</span><span class="nm">${esc(it.name)}</span><span class="pr">${priceHtml(it)}</span>
    <span class="who">${esc(it.person)} · ${esc(showOf(it.showId).title)}</span></button>`).join("")
    :`<p class="empty full">${S.items.length?"조건에 맞는 착장이 아직 없어요. 아래에서 제보해 주시면 확인해서 올려둘게요.":"아직 등록된 착장이 없어요."}</p>`;
 }
@@ -141,7 +151,7 @@ function openItem(id){
   const same=S.items.filter(i=>i.person===it.person&&i.id!==it.id).slice(0,3);
   $("#ov").innerHTML=`<div class="md" role="dialog" aria-modal="true" aria-label="${esc(it.name)}">
    <button class="x" id="close" aria-label="닫기">×</button>${thumb(it)}
-   <div class="bd"><span class="br">${esc(it.brand)}${sampleTag(it)}</span><h3>${esc(it.name)}</h3><span class="pr">${won(it.price)}</span>
+   <div class="bd"><span class="br">${esc(it.brand)}${sampleTag(it)}</span><h3>${esc(it.name)}</h3><span class="pr">${priceHtml(it)}</span>${hasNum(it.couponPrice)?`<span class="note">쿠폰 적용 시 최대 ${won(it.couponPrice)}</span>`:""}<span class="note">${priceNote(it)}</span>
    <dl><dt>인물</dt><dd>${esc(it.person)}</dd><dt>프로그램</dt><dd>${esc(s.title)}${it.ep?" · "+esc(it.ep):""}</dd>
    ${s.platform?`<dt>플랫폼</dt><dd>${esc(s.platform)}</dd>`:""}<dt>분류</dt><dd>${CATS[it.cat]||""}</dd></dl>
    ${it.scene?`<p class="scene">${esc(it.scene)}</p>`:""}
@@ -208,7 +218,7 @@ function renderAdmin(){
   $$("#admTabs [data-tab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.tab===tab));
   $$("[data-panel]").forEach(p=>p.hidden=p.dataset.panel!==tab);
   $("#iList").innerHTML=S.items.length?[...S.items].sort(byNew).map(it=>`<div class="arow">${thumb(it)}
-    <div style="min-width:0"><b>${esc(it.brand)} · ${esc(it.name)}</b><span>${esc(it.person)} · ${esc(showOf(it.showId).title)} ${esc(it.ep||"")} · ${won(it.price)}</span></div>
+    <div style="min-width:0"><b>${esc(it.brand)} · ${esc(it.name)}</b><span>${esc(it.person)} · ${esc(showOf(it.showId).title)} ${esc(it.ep||"")} · ${won(it.price)}${it.priceCheckFailed?" · <em class=\"warn\">가격 확인 실패</em>":it.priceCheckedAt?" · "+md(it.priceCheckedAt)+" 확인":""}</span></div>
     <div class="btns"><button class="ghost" data-edit="item:${esc(it.id)}">수정</button>${delBtn("item",it.id)}</div></div>`).join("")
     :`<p class="empty">등록된 아이템이 없어요. 왼쪽에서 첫 아이템을 등록해 보세요.</p>`;
   $("#sList").innerHTML=S.shows.length?[...S.shows].sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).map(s=>`<div class="arow">
