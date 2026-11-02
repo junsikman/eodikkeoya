@@ -91,46 +91,14 @@ async function generic(url) {
 }
 
 const SHOPS = [{ host: /(^|\.)wconcept\.co\.kr$/i, read: wconcept }];
-// 네이버 스마트스토어·브랜드스토어: 페이지는 자동 접속을 막아서, 네이버 공식 "쇼핑 검색 API"로 찾아요.
-// 상품명으로 검색한 결과 중 링크의 상품 번호가 같은 것만 써요(비슷한 다른 상품 가격을 쓰지 않게).
-const NAVER_ID = process.env.NAVER_CLIENT_ID || "", NAVER_SECRET = process.env.NAVER_CLIENT_SECRET || "";
-const NAVER_HOST = /(^|\.)(smartstore|brand|shopping)\.naver\.com$/i;
-const strip = s => String(s || "").replace(/<[^>]+>/g, "");
-async function naverSearch(query) {
-  const res = await fetch(`https://openapi.naver.com/v1/search/shop.json?display=100&query=${encodeURIComponent(query)}`, {
-    headers: { "X-Naver-Client-Id": NAVER_ID, "X-Naver-Client-Secret": NAVER_SECRET },
-  });
-  if (!res.ok) throw new Error(`네이버 API 응답 ${res.status}: ${(await res.text()).slice(0, 120)}`);
-  return (await res.json()).items || [];
-}
-async function naver(url, it) {
-  if (!NAVER_ID || !NAVER_SECRET) throw new Error("네이버 API 키가 없어요(NAVER_CLIENT_ID/NAVER_CLIENT_SECRET)");
-  const no = (url.match(/\/products\/(\d+)/) || [])[1];
-  if (!no) throw new Error("링크에서 상품 번호를 찾지 못했어요");
-  const name = String(it.name || "").replace(/\s*-\s*[A-Za-z ]+$/, ""); // "- Light Pink" 같은 색상 꼬리는 빼고도 검색
-  const brand = String(it.brand || "").replace(/\s*\(.*?\)\s*/g, " ").trim();
-  for (const q of [...new Set([`${brand} ${it.name}`, `${brand} ${name}`, it.name, name])]) {
-    const found = (await naverSearch(q)).find(x => String(x.productId) === no || String(x.link || "").includes(no));
-    if (found) {
-      const sale = toInt(found.lprice);
-      if (!sale) break;
-      console.log(`  네이버에서 찾음: ${strip(found.title)} / ${found.mallName}`);
-      return { list: null, sale, coupon: null };
-    }
-    await sleep(300);
-  }
-  throw new Error("네이버 쇼핑 검색에서 이 상품 번호를 찾지 못했어요(직접 입력한 가격을 유지해요)");
-}
-
-async function readPrice(url, it) {
+async function readPrice(url) {
   const host = new URL(url).hostname;
-  if (NAVER_HOST.test(host)) return naver(url, it);
   const shop = SHOPS.find(s => s.host.test(host));
   return (shop ? shop.read : generic)(url);
 }
 
 // ---- 실행 ----
-const items = await db("items?select=id,brand,name,buy_url,price,links", { headers: { Prefer: "" } });
+const items = await db("items?select=id,name,buy_url,price,links", { headers: { Prefer: "" } });
 let ok = 0, failed = 0;
 
 for (const it of items) {
@@ -140,7 +108,7 @@ for (const it of items) {
   // 대표 구매 링크
   if (/^https?:\/\//i.test(it.buy_url || "")) {
     try {
-      const p = await readPrice(it.buy_url, it);
+      const p = await readPrice(it.buy_url);
       Object.assign(patch, {
         price: p.sale, list_price: p.list,
         coupon_price: p.coupon && p.coupon < (p.sale ?? Infinity) ? p.coupon : null,
@@ -160,7 +128,7 @@ for (const it of items) {
   for (const l of links) {
     if (!/^https?:\/\//i.test(l?.url || "")) continue;
     try {
-      const p = await readPrice(l.url, it);
+      const p = await readPrice(l.url);
       Object.assign(l, { price: p.sale, list: p.list, checked_at: now, failed: false, src: "auto" });
       ok++; console.log(`확인 ${it.name} [${l.shop || new URL(l.url).hostname}]: 판매가 ${p.sale}`);
     } catch (e) {
