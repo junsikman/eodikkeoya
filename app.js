@@ -69,7 +69,7 @@ function buyLinks(it){
   return out;
 }
 const vfTag=it=>`<span class="vf vf-${esc(it.verify)}">${VERIFY[it.verify]||"추정"}</span>`;
-const sceneText=it=>[it.ep,it.sceneTime].filter(Boolean).join(" ");
+const sceneText=it=>it.ep||"";
 const toShow=r=>({id:r.id,title:r.title,platform:r.platform,ep:r.ep,posterUrl:r.poster_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toReport=r=>({id:r.id,show:r.show,ep:r.ep,who:r.who,cat:r.cat,desc:r.descr,link:r.link,at:r.created_at});
 let F={q:"",cat:"",show:"",person:""}, plat="전체", tab="items";
@@ -328,7 +328,7 @@ $("#iForm").addEventListener("submit",async e=>{
     }
     const person=await ensurePerson($("#iPerson").value.trim());
     const doc={brand:$("#iBrand").value.trim(),name:$("#iName").value.trim(),cat:$("#iCat").value,price,
-      person:person.name,person_id:person.id,verify:$("#iVerify").value,scene_time:$("#iTime").value.trim(),
+      person:person.name,person_id:person.id,verify:$("#iVerify").value,
       show_id:show.id,ep,scene:$("#iScene").value.trim(),
       buy_url:$("#iUrl").value.trim(),buy_affiliate:$("#iAff").checked,links:readLinks(),
       image_url:up||(iImg===false?"":(prev.imageUrl||"")),updated_at:now};
@@ -382,7 +382,7 @@ function fillItem(it){
   $("#iBrand").value=it.brand||"";$("#iName").value=it.name||"";$("#iCat").value=it.cat||"top";
   $("#iPrice").value=typeof it.price==="number"?it.price:"";$("#iPerson").value=it.person||"";
   $("#iShow").value=S.shows.find(s=>s.id===it.showId)?.title||"";syncShowNote();
-  $("#iEp").value=it.ep||"";$("#iTime").value=it.sceneTime||"";$("#iVerify").value=it.verify||"guess";$("#iScene").value=it.scene||"";$("#iUrl").value=it.buyUrl||"";$("#iAff").checked=!!it.buyAffiliate;setLinks(it.links);syncPersonNote();
+  $("#iEp").value=it.ep||"";$("#iVerify").value=it.verify||"guess";$("#iScene").value=it.scene||"";$("#iUrl").value=it.buyUrl||"";$("#iAff").checked=!!it.buyAffiliate;setLinks(it.links);syncPersonNote();
   $("#iImg").value="";curImg("#iCur",it.imageUrl,"i");
   $("#iFormTitle").textContent="아이템 수정";$("#iSubmit").textContent="수정 저장";$("#iCancel").hidden=false;
   $("#iForm").scrollIntoView({behavior:"smooth",block:"start"});
