@@ -67,7 +67,7 @@ async function naver(kind, query) {
       : /^\d{8}$/.test(it.postdate || "") ? new Date(`${it.postdate.slice(0, 4)}-${it.postdate.slice(4, 6)}-${it.postdate.slice(6)}T00:00:00+09:00`) : null;
     // 네이버 뉴스 주소가 있으면 그걸 읽어요 (본문 구조가 일정해요)
     const link = kind === "news" && /n\.news\.naver\.com|news\.naver\.com/.test(it.link || "") ? it.link : (it.originallink || it.link);
-    return { kind, title: unhtml(it.title), snippet: unhtml(it.description), link, date };
+    return { kind, title: unhtml(it.title), snippet: unhtml(it.description), link, date, blogger: unhtml(it.bloggername || "") };
   });
 }
 
@@ -156,15 +156,25 @@ async function ensureModel() {
 }
 
 // ---- AI가 뽑은 결과 확인: 글에 실제로 적혀 있는지 ----
-function check(c, text) {
-  const brand = cut(c.brand, 60), name = cut(c.name, 120);
-  if (!brand || !name) return null;
+// 통과하면 null, 버릴 이유가 있으면 이유를 돌려줘요
+function check(c, text, doc) {
+  const brand = cut(c.brand, 60), name = cut(c.name, 120), person = cut(c.person, 40);
+  if (!brand || !name) return "브랜드나 상품명이 없어요";
   const t = norm(text);
-  if (!t.includes(norm(brand))) return null; // 브랜드가 글에 없으면 AI가 지어낸 것으로 봐요
+  if (!t.includes(norm(brand))) return "브랜드가 글에 없어요(AI가 지어냈을 수 있어요)";
   const words = name.split(/\s+/).map(norm).filter(w => w.length >= 2 && w !== norm(brand));
-  if (words.length && !words.some(w => t.includes(w))) return null; // 상품명도 한 단어는 글에 있어야 해요
-  return { ...c, brand, name };
+  if (words.length && !words.some(w => t.includes(w))) return "상품명이 글에 없어요";
+  // 출연자가 분명해야 해요 (블로거 본인 후기·광고 글 거르기)
+  if (!person || /^(없음|모름|미상|기타|unknown)$/i.test(person)) return "출연자를 모르는 글이에요";
+  if (!t.includes(norm(person))) return "출연자가 글에 없어요";
+  if (norm(person) === norm(brand)) return "출연자 자리에 브랜드가 들어갔어요";
+  if (doc.blogger && norm(person) === norm(doc.blogger)) return "블로거 본인이에요";
+  if (/^[a-z0-9_.]+$/i.test(person) || /맘$|님$/.test(person)) return "블로거 닉네임 같아요";
+  if ([c.show, doc.show, doc.query].some(x => x && norm(x) === norm(brand))) return "브랜드 자리에 프로그램 이름이 들어갔어요";
+  return null;
 }
+// 협찬받아 쓴 블로그 후기(연예인 착장이 아닌 제품 광고)
+const AD = /(소정의\s*(원고료|수수료)|업체로부터|제품을\s*(무상\s*)?(제공|지원)\s*받|협찬을\s*받아|체험단|내돈내산\s*아님|파트너스\s*활동)/;
 
 // ---- 실행 ----
 await ensureModel();
@@ -219,14 +229,21 @@ console.log(`새로 읽을 글 ${docs.length}개`);
 let added = 0, read = 0;
 for (const doc of docs) {
   const text = await readText(doc);
+  if (doc.kind === "blog" && AD.test(text)) {
+    console.log(`광고 글이라 건너뜀: ${doc.title}`);
+    if (!DRY) await db("auto_seen?on_conflict=link", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify([{ link: doc.link }]) }).catch(() => {});
+    continue;
+  }
   let cands = [];
   try { cands = await ask(doc, text); read++; }
   catch (e) { console.log(`AI 실패 [${doc.title}]: ${e.message}`); continue; } // 다음에 다시 읽도록 "읽음"으로 남기지 않아요
 
   const rows = [];
   for (const raw of cands) {
-    const c = check(raw, `${doc.title} ${text}`);
-    if (!c) { if (raw?.brand) console.log(`  버림(글에서 확인 안 됨): ${raw.brand} ${raw.name}`); continue; }
+    const why = check(raw || {}, `${doc.title} ${text}`, doc);
+    if (why) { if (raw?.brand) console.log(`  버림(${why}): ${raw.person || "?"} · ${raw.brand} ${raw.name}`); continue; }
+    const c = { ...raw, brand: cut(raw.brand, 60), name: cut(raw.name, 120) };
+    if (rows.some(r => r.who === cut(c.person, 40) && norm(r.brand) === norm(c.brand))) continue; // 같은 사람·같은 브랜드는 하나만
     if (known.has(norm(c.brand) + "|" + norm(c.name))) { console.log(`  이미 등록된 아이템: ${c.brand} ${c.name}`); continue; }
     const show = cut(doc.show || c.show || doc.query, 80); // 사이트에 등록된 프로그램 이름을 먼저 써요
     const who = cut(c.person, 40);
@@ -242,6 +259,9 @@ for (const doc of docs) {
     });
     console.log(`  찾음: ${who || "?"} · ${show} · ${c.brand} ${c.name}`);
   }
+
+  // 한 글에서 후보가 너무 많이 나오면 상품 카탈로그·광고 기사일 가능성이 높아요
+  if (rows.length > 5) { console.log(`  후보가 ${rows.length}개라 광고·카탈로그 글로 보고 버렸어요: ${doc.title}`); rows.length = 0; }
 
   if (!DRY) {
     try {
