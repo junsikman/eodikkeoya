@@ -30,7 +30,7 @@ if (missing.length) { console.error(`비밀값이 없어요: ${missing.join(", "
 
 const CATS = ["상의", "아우터", "하의", "원피스", "가방", "모자", "신발", "주얼리", "뷰티", "식품", "인테리어"];
 // 착장·제품 이야기일 가능성이 있는 글만 AI에게 보내요 (시간 절약)
-const HINT = /착용|패션|코디|브랜드|제품|아이템|옷|자켓|재킷|점퍼|패딩|코트|셔츠|니트|후드|맨투맨|바지|팬츠|청바지|데님|치마|스커트|원피스|가방|백|모자|캡|신발|운동화|스니커즈|부츠|목걸이|반지|귀걸이|시계|안경|선글라스|화장품|립|향수|협찬|정보|어디\s*(꺼|거|제품)|가격/;
+const HINT = /착용|패션|코디|룩|브랜드|제품|아이템|옷|자켓|재킷|점퍼|패딩|코트|셔츠|니트|후드|맨투맨|바지|팬츠|청바지|데님|치마|스커트|원피스|가방|백|모자|캡|신발|운동화|스니커즈|부츠|목걸이|반지|귀걸이|시계|안경|선글라스|화장품|뷰티|립|향수|크림|세럼|쿠션|선크림|샴푸|비누|바디|헤어|음식|식품|간식|과자|라면|밀키트|소스|양념|김치|커피|음료|술|빵|떡|맛집|인테리어|가구|소파|조명|침구|그릇|주방|냄비|가전|청소기|공기청정기|생활용품|살림|캠핑|추천템|애용템|꿀템|인생템|공구|공동구매|출시|론칭|협찬|정보|어디\s*(꺼|거|제품)|가격|구매|판매/;
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -82,12 +82,41 @@ async function readText(doc) {
     let html = await res.text();
     html = html.replace(/<(script|style|noscript|svg|header|footer|nav|aside)[\s\S]*?<\/\1>/gi, " ");
     const body = html.match(/<(?:article|div)[^>]+(?:id="(?:dic_area|articleBodyContents|article_body|articeBody|newsct_article)"|class="[^"]*(?:se-main-container|post_ct|article_body|news_end)[^"]*")[^>]*>([\s\S]*)/i);
-    const text = unhtml(body ? body[1] : html);
+    const part = body ? body[1] : html;
+    const text = unhtml(part);
     if (text.length < 80) throw new Error("본문이 짧아요");
+    doc.shops = shopLinks(part);
     return text.slice(0, TEXT_LIMIT);
   } catch {
+    doc.shops = [];
     return `${doc.title}. ${doc.snippet}`;
   }
+}
+
+// ---- 글 안의 판매처 링크 ----
+const SHOP_HOSTS = /(^|\.)(coupang\.com|smartstore\.naver\.com|brand\.naver\.com|shopping\.naver\.com|musinsa\.com|29cm\.co\.kr|wconcept\.co\.kr|oliveyoung\.co\.kr|kurly\.com|ssg\.com|lotteon\.com|11st\.co\.kr|gmarket\.co\.kr|auction\.co\.kr|ably\.co\.kr|zigzag\.kr|kream\.co\.kr|ohou\.se|hmall\.com|cjonstyle\.com|gsshop\.com|lfmall\.co\.kr|ssfshop\.com|thehandsome\.com|kakao\.com|naver\.me)$/i;
+function shopLinks(html) {
+  const out = [];
+  for (const m of html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    let url = m[1].replace(/&amp;/g, "&");
+    try {
+      const u = new URL(url);
+      if (!/^https?:$/.test(u.protocol) || !SHOP_HOSTS.test(u.hostname)) continue;
+      if (u.hostname.endsWith("kakao.com") && !/gift|store|shopping/.test(u.hostname + u.pathname)) continue;
+      url = u.href.slice(0, 400);
+    } catch { continue; }
+    if (out.some(x => x.url === url)) continue;
+    out.push({ url, text: unhtml(m[2]).slice(0, 80) });
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+// 후보 제품과 관계있어 보이는 판매처 링크 고르기
+function linksFor(c, doc, many) {
+  const shops = doc.shops || [];
+  const keys = [c.brand, ...String(c.name).split(/\s+/)].map(norm).filter(w => w.length >= 2);
+  const hit = shops.filter(l => keys.some(k => norm(l.text + " " + decodeURIComponent(l.url)).includes(k)));
+  return (hit.length ? hit : many ? [] : shops).slice(0, 3).map(l => l.url); // 후보가 하나뿐인 글이면 글 속 판매처를 그대로 붙여요
 }
 
 // ---- 올라마 ----
@@ -114,15 +143,17 @@ const SCHEMA = {
   required: ["items"],
 };
 
-const SYSTEM = `너는 방송·유튜브 출연자가 입거나 쓴 제품 정보를 기사·블로그 글에서 뽑아내는 도우미야.
+const SYSTEM = `너는 방송·유튜브·SNS 출연자가 입거나, 쓰거나, 먹거나, 직접 추천·홍보한 제품 정보를 기사·블로그 글에서 뽑아내는 도우미야.
+옷·가방·신발·주얼리뿐 아니라 화장품·헤어·바디 제품, 식품·음료·간식·밀키트, 가구·소품·주방용품·가전·생활용품도 모두 해당돼.
+출연자가 유튜브나 방송에서 직접 소개하거나 공동구매·출시한 제품(예: 배우가 유튜브에서 소개한 비누)도 뽑아.
 규칙:
 - 글에 브랜드 이름이 분명히 적힌 제품만 뽑아. 추측하거나 지어내지 마. 브랜드가 없으면 뽑지 마.
 - brand는 글에 적힌 글자 그대로 써 (영어로 바꾸거나 한글로 바꾸지 마).
 - name은 글에 나온 상품명이나 제품 설명 (예: "울 블렌드 싱글 코트", "로고 볼캡").
-- person은 그 제품을 입거나 쓴 출연자 이름. show는 프로그램 이름, ep는 회차(예: "620회")이고 모르면 빈 글자.
+- person은 그 제품을 입거나 쓰거나 먹거나 소개한 출연자(연예인·방송인·유튜버) 이름. 글쓴이(블로거)는 출연자가 아니야. show는 프로그램 이름, ep는 회차(예: "620회")이고 모르면 빈 글자.
 - cat은 제품 종류: ${CATS.join(", ")} 중 하나, 맞는 게 없으면 "기타".
 - evidence는 그 제품이 나온 글의 문장을 그대로 짧게 옮겨 (50자 이내).
-- 광고, 쇼핑몰 홍보, 출연자와 상관없는 제품은 빼.
+- 출연자와 상관없는 제품(글쓴이가 혼자 산 물건, 쇼핑몰 홍보)은 빼.
 - 해당하는 제품이 없으면 items를 빈 배열로 줘.`;
 
 async function ask(doc, text) {
@@ -245,11 +276,13 @@ for (const doc of docs) {
     if (known.has(norm(c.brand) + "|" + norm(c.name))) { console.log(`  이미 등록된 아이템: ${c.brand} ${c.name}`); continue; }
     const show = cut(doc.show || c.show || doc.query, 80); // 사이트에 등록된 프로그램 이름을 먼저 써요
     const who = cut(c.person, 40);
+    const shops = linksFor(c, doc, cands.length > 1).filter(u => u.length <= 200);
     const descr = cut([
       `${c.brand} ${c.name}`,
-      c.evidence ? `근거: "${cut(c.evidence, 120)}"` : "",
-      `출처: ${doc.kind === "news" ? "뉴스" : "블로그"} · ${doc.title}`,
+      c.evidence ? `근거: "${cut(c.evidence, 100)}"` : "",
+      `출처: ${doc.kind === "news" ? "뉴스" : "블로그"} · ${cut(doc.title, 80)}`,
       adNote ? "※ 협찬·제휴 표시가 있는 글이에요. 제품이 맞는지 한 번 더 확인해 주세요" : "",
+      ...shops.map(u => `판매처: ${u}`),
     ].filter(Boolean).join("\n"), 600);
     rows.push({
       source: "auto", show, ep: cut(c.ep, 100), who, cat: CATS.includes(c.cat) ? c.cat : "",

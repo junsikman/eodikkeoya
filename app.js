@@ -1,5 +1,5 @@
 const CATS={top:"상의",outer:"아우터",bottom:"하의",dress:"원피스",bag:"가방",hat:"모자",shoes:"신발",jewelry:"주얼리",beauty:"뷰티",food:"식품",interior:"인테리어"};
-const PLATS=["Netflix","TVING","Wavve","YouTube","Disney+","coupangplay","KBS","MBC","SBS","JTBC","tvN","Instagram","공항패션","출근룩","행사·포토콜","기타"];
+const PLATS=["Netflix","TVING","Wavve","YouTube","Disney+","coupangplay","KBS","MBC","SBS","JTBC","tvN","Instagram","공항패션","출근룩","행사·포토콜","화보·광고","기타"];
 const SHAPE={
  top:'<path d="M30 22 42 15Q50 24 58 15L70 22 85 37 74 47 68 41V85H32V41L26 47 15 37Z"/>',
  outer:'<path d="M32 16 44 12 50 30 56 12 68 16 82 30 80 88H62L50 40 38 88H20L18 30Z"/>',
@@ -307,6 +307,11 @@ function curImg(box,url,which){
   $(box).hidden=false;$(box).innerHTML=`<img src="${esc(url)}" alt=""><span class="note">현재 이미지</span><button type="button" class="ghost" data-rmimg="${which}">이미지 빼기</button>`;
 }
 function delBtn(kind,id){return `<button type="button" class="ghost danger" data-del="${kind}:${esc(id)}">${armed===kind+":"+id?"정말 삭제":"삭제"}</button>`}
+// 제보함: 글 속 주소를 누를 수 있게, 그리고 쇼핑몰 검색 바로가기
+function linkify(t){return esc(t).replace(/https?:\/\/[^\s<]+/g,u=>`<a href="${u}" target="_blank" rel="noopener noreferrer">${u.length>60?u.slice(0,60)+"…":u}</a>`)}
+const SHOP_SEARCH=[["네이버쇼핑","https://search.shopping.naver.com/search/all?query="],["쿠팡","https://www.coupang.com/np/search?q="],["무신사","https://www.musinsa.com/search/goods?keyword="],["올리브영","https://www.oliveyoung.co.kr/store/search/getSearchMain.do?query="]];
+function shopSearch(q){q=encodeURIComponent(q.trim());return SHOP_SEARCH.map(([n,u])=>`<a class="ghost sbtn" href="${u}${q}" target="_blank" rel="noopener noreferrer">${n}</a>`).join("")}
+const shopUrlIn=t=>(String(t||"").match(/판매처: (https?:\/\/\S+)/)||[])[1]||"";
 function renderAdmin(){
   if(!S.owner)return;
   $$("#admTabs [data-tab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.tab===tab));
@@ -328,7 +333,8 @@ function renderAdmin(){
     :`<p class="empty">아직 등록된 인물이 없어요. 아이템을 등록하면 인물이 여기에 모여요.</p>`;
   $("#rList").innerHTML=S.reports.length?S.reports.map(r=>`<div class="rep">
     <div class="top"><b>${r.auto?`<em class="auto">자동 수집</em> `:""}${esc(r.show)}</b><span>${esc(r.ep||"")}${r.who?" · "+esc(r.who):""}${r.cat?" · "+esc(r.cat):""} · ${md(r.at)}</span></div>
-    <p>${esc(r.desc)}</p>
+    <p>${linkify(r.desc)}</p>
+    ${r.auto&&(r.brand||r.name)?`<div class="btns shopq"><span class="note">판매처 찾기</span>${shopSearch(r.brand+" "+r.name)}</div>`:""}
     ${okUrl(r.link)&&/^https?:/i.test(r.link)?`<a class="note" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">${esc(r.link)}</a>`:""}
     <div class="btns"><button class="ghost" data-fromrep="${esc(r.id)}">이 제보로 아이템 등록</button>
     <button class="ghost danger" data-done="${esc(r.id)}">${r.auto?"틀림·버리기":"처리 완료"}</button></div></div>`).join("")
@@ -560,6 +566,7 @@ document.addEventListener("click",async e=>{
     tab="items";renderAdmin();resetIForm();
     $("#iPerson").value=r.who||"";$("#iEp").value=r.ep||"";$("#iScene").value=r.auto?"":(r.desc||"");
     if(r.brand)$("#iBrand").value=r.brand;if(r.name)$("#iName").value=r.name;
+    if(r.auto&&shopUrlIn(r.desc))$("#iUrl").value=shopUrlIn(r.desc);
     const ck=Object.keys(CATS).find(k=>CATS[k]===r.cat);if(ck)$("#iCat").value=ck;
     const s=findShow(r.show);$("#iShow").value=s?s.title:(r.show||"");syncShowNote();
     toast(r.auto?(s?"자동 수집 내용을 채웠어요. 출처 글과 맞는지 확인하고 구매 링크를 넣어 주세요":"자동 수집 내용을 채웠어요. 새 프로그램이라 플랫폼도 골라 주세요")
