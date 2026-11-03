@@ -15,7 +15,7 @@
   "updated_at": "2026-11-02T06:44:56.446+00:00",
   "list_price": 59000,
   "coupon_price": 31594,
-  "price_checked_at": "2026-11-02T06:38:33.508+00:00",
+  "price_checked_at": "2026-11-02T19:59:11.723+00:00",
   "price_check_failed": false,
   "person_id": "79157c02-8e28-4d1f-82be-574b1caf878b",
   "verify": "official",
@@ -26,7 +26,8 @@
     "src": "manual",
     "url": "https://brand.naver.com/nonlocal/products/13526639915?nl-query=%EB%85%BC%EB%A1%9C%EC%BB%AC+%28NONLOCAL%29+%EB%A6%AC%EB%B3%B8+%EC%8A%A4%ED%8A%B8%EB%A7%81+%EB%A6%B0%EB%84%A8+%EB%B2%84%ED%82%B7%ED%96%87+-+Light+Pink&nl-ts-pid=jXlYssqosZqiGH7PbLC-333213&NaPm=ct%3Dmvyvwcnk%7Cci%3D34b47e3180bdf799cf4353bdffe52ed7f2c0375b%7Ctr%3Dsls%7Csn%3D824340%7Chk%3D024145391d6b44a1109272a0c44cd434ab3afe31",
     "shop": "논로컬",
-    "price": 59000
+    "price": 59000,
+    "failed": true
    }
   ],
   "buy_affiliate": true
@@ -71,7 +72,7 @@
   "updated_at": "2026-11-02T10:15:27.439+00:00",
   "list_price": null,
   "coupon_price": null,
-  "price_checked_at": null,
+  "price_checked_at": "2026-11-02T19:59:21.226+00:00",
   "price_check_failed": false,
   "person_id": "d086441a-2bc3-4562-9f44-65bbf4714999",
   "verify": "official",
@@ -96,7 +97,7 @@
   "list_price": null,
   "coupon_price": null,
   "price_checked_at": null,
-  "price_check_failed": false,
+  "price_check_failed": true,
   "person_id": "ca6f5e7a-60e7-4ca2-9d60-6695b5c251cd",
   "verify": "official",
   "scene_time": "",
