@@ -2,7 +2,7 @@
 // 깃허브 자동 작업(.github/workflows/deploy.yml)이 실행해요.
 import { mkdir, writeFile, copyFile, readFile } from "node:fs/promises";
 
-const BASE = (process.env.SITE_URL || "https://junsikman.github.io/eodikkeoya").replace(/\/+$/, "");
+const BASE = (process.env.SITE_URL || "https://wherefrom.store").replace(/\/+$/, "");
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
 const KEY = process.env.SUPABASE_KEY || "";
 const OUT = "_site";
@@ -165,6 +165,7 @@ for (const it of items) {
 // ---- 4) 사이트맵 ----
 const urls = [`<url><loc>${BASE}/</loc></url>`, ...items.filter(it => seen.has(short(it.id))).map(it => `<url><loc>${BASE}/item/${short(it.id)}/</loc><lastmod>${new Date(it.updated_at || it.created_at).toISOString().slice(0, 10)}</lastmod></url>`)];
 await writeFile(`${OUT}/sitemap.xml`, `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...new Set(urls)].join("\n")}\n</urlset>\n`);
+await writeFile(`${OUT}/robots.txt`, `User-agent: *\nAllow: /\n\nSitemap: ${BASE}/sitemap.xml\n`);
 
 // 첫 화면 index.html에도 주소를 맞춰 넣어요
 const idx = await readFile(`${OUT}/index.html`, "utf8");
