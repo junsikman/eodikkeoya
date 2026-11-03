@@ -229,11 +229,9 @@ console.log(`새로 읽을 글 ${docs.length}개`);
 let added = 0, read = 0;
 for (const doc of docs) {
   const text = await readText(doc);
-  if (doc.kind === "blog" && AD.test(text)) {
-    console.log(`광고 글이라 건너뜀: ${doc.title}`);
-    if (!DRY) await db("auto_seen?on_conflict=link", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify([{ link: doc.link }]) }).catch(() => {});
-    continue;
-  }
+  // 협찬·제휴 문구가 있어도 버리지 않아요 (쿠팡 파트너스 같은 제휴 수익 표시일 수 있어요).
+  // 출연자·브랜드·상품명이 확인되면 제보함에 "협찬·제휴 표시" 메모를 달아서 넣어요.
+  const adNote = AD.test(text);
   let cands = [];
   try { cands = await ask(doc, text); read++; }
   catch (e) { console.log(`AI 실패 [${doc.title}]: ${e.message}`); continue; } // 다음에 다시 읽도록 "읽음"으로 남기지 않아요
@@ -251,6 +249,7 @@ for (const doc of docs) {
       `${c.brand} ${c.name}`,
       c.evidence ? `근거: "${cut(c.evidence, 120)}"` : "",
       `출처: ${doc.kind === "news" ? "뉴스" : "블로그"} · ${doc.title}`,
+      adNote ? "※ 협찬·제휴 표시가 있는 글이에요. 제품이 맞는지 한 번 더 확인해 주세요" : "",
     ].filter(Boolean).join("\n"), 600);
     rows.push({
       source: "auto", show, ep: cut(c.ep, 100), who, cat: CATS.includes(c.cat) ? c.cat : "",
