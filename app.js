@@ -1,5 +1,5 @@
 const CATS={top:"상의",outer:"아우터",bottom:"하의",dress:"원피스",bag:"가방",hat:"모자",shoes:"신발",jewelry:"주얼리",beauty:"뷰티",food:"식품",interior:"인테리어"};
-const PLATS=["Netflix","TVING","Wavve","YouTube","Disney+","coupangplay","KBS","MBC","SBS","JTBC","tvN","Instagram","공항패션","기타"];
+const PLATS=["Netflix","TVING","Wavve","YouTube","Disney+","coupangplay","KBS","MBC","SBS","JTBC","tvN","Instagram","공항패션","출근룩","행사·포토콜","기타"];
 const SHAPE={
  top:'<path d="M30 22 42 15Q50 24 58 15L70 22 85 37 74 47 68 41V85H32V41L26 47 15 37Z"/>',
  outer:'<path d="M32 16 44 12 50 30 56 12 68 16 82 30 80 88H62L50 40 38 88H20L18 30Z"/>',
