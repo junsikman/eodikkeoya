@@ -154,6 +154,8 @@ const SYSTEM = `너는 방송·유튜브·SNS 출연자가 입거나, 쓰거나,
 - cat은 제품 종류: ${CATS.join(", ")} 중 하나, 맞는 게 없으면 "기타".
 - evidence는 그 제품이 나온 글의 문장을 그대로 짧게 옮겨 (50자 이내).
 - 출연자와 상관없는 제품(글쓴이가 혼자 산 물건, 쇼핑몰 홍보)은 빼.
+- 살 수 있는 물건만 뽑아. 여행지·장소·식당·활동·장면·이벤트·사람·아이돌 그룹 이름은 제품이 아니야.
+- brand에는 회사나 상표 이름만 써. 사람 이름, 그룹 이름, 프로그램 이름, 지역 이름은 brand가 아니야.
 - 해당하는 제품이 없으면 items를 빈 배열로 줘.`;
 
 async function ask(doc, text) {
@@ -202,6 +204,11 @@ function check(c, text, doc) {
   if (doc.blogger && norm(person) === norm(doc.blogger)) return "블로거 본인이에요";
   if (/^[a-z0-9_.]+$/i.test(person) || /맘$|님$/.test(person)) return "블로거 닉네임 같아요";
   if ([c.show, doc.show, doc.query].some(x => x && norm(x) === norm(brand))) return "브랜드 자리에 프로그램 이름이 들어갔어요";
+  if (doc.query && norm(doc.query).includes(norm(brand))) return "브랜드 자리에 검색어(사람·그룹·프로그램 이름)가 들어갔어요";
+  if (norm(brand) === norm(person)) return "브랜드 자리에 사람 이름이 들어갔어요";
+  const rest = norm(name).split(norm(brand)).join("");
+  if (rest.length < 2) return "상품명이 따로 없어요";
+  if (/(여행|투어|체험|장면|점프|운동회|촬영|방문|출연|무대|공연|콘서트|경기|대회|맛집|식당|카페|호텔|숙소|리조트|축제)$/.test(norm(name))) return "살 수 있는 제품이 아니에요(장소·활동)";
   return null;
 }
 // 협찬받아 쓴 블로그 후기(연예인 착장이 아닌 제품 광고)
