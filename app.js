@@ -436,7 +436,7 @@ function linkRow(l={}){
   d.innerHTML=`<input class="lshop" maxlength="20" placeholder="쇼핑몰" aria-label="쇼핑몰 이름" value="${esc(l.shop||"")}">
    <input class="lurl" type="url" maxlength="600" placeholder="https://" aria-label="구매 링크" value="${esc(l.url||"")}">
    <input class="lprice" type="number" min="0" step="1" placeholder="가격(원)" aria-label="이 구매처 가격(원)" value="${hasNum(l.price)?l.price:""}">
-   <label class="laff"><input type="checkbox" class="lafc"${l.aff?" checked":""}> 제휴</label>
+   <label class="laff"><input type="checkbox" class="lafc"${l.aff?" checked":""}> 내 제휴</label>
    <button type="button" class="ghost lrm" aria-label="이 구매처 빼기">빼기</button>`;
   return d;
 }
@@ -456,7 +456,7 @@ function readLinks(){
 }
 $("#iAddLink").addEventListener("click",()=>{$("#iLinks").appendChild(linkRow());$("#iAddLink").hidden=$("#iLinks").children.length>=5;$("#iLinks").lastElementChild.querySelector(".lurl").focus()});
 $("#iLinks").addEventListener("click",e=>{const b=e.target.closest(".lrm");if(!b)return;b.closest(".lrow").remove();$("#iAddLink").hidden=false});
-let editI=null,editS=null,iImg=null,sImg=null,armed=null,fetchedImg=null,fetchedList=null;
+let editI=null,editS=null,iImg=null,sImg=null,armed=null,fetchedImg=null,fetchedList=null,fromReport=null,lastFetched="";
 function curImg(box,url,which){
   if(!okUrl(url)){$(box).hidden=true;$(box).innerHTML="";return}
   $(box).hidden=false;$(box).innerHTML=`<img src="${esc(url)}" alt=""><span class="note">현재 이미지</span><button type="button" class="ghost" data-rmimg="${which}">이미지 빼기</button>`;
@@ -467,14 +467,24 @@ function linkify(t){return esc(t).replace(/https?:\/\/[^\s<]+/g,u=>`<a href="${u
 const SHOP_SEARCH=[["네이버쇼핑","https://search.shopping.naver.com/search/all?query="],["쿠팡","https://www.coupang.com/np/search?q="],["무신사","https://www.musinsa.com/search/goods?keyword="],["올리브영","https://www.oliveyoung.co.kr/store/search/getSearchMain.do?query="]];
 function shopSearch(q){q=encodeURIComponent(q.trim());return SHOP_SEARCH.map(([n,u])=>`<a class="ghost sbtn" href="${u}${q}" target="_blank" rel="noopener noreferrer">${n}</a>`).join("")}
 const shopUrlIn=t=>(String(t||"").match(/판매처: (https?:\/\/\S+)/)||[])[1]||"";
+/* ---------- 남의 제휴 링크 막기 ----------
+   제휴·추적 표시(쿠팡 lptag·subid, 네이버 NaPm, utm_ 등)는 지우고,
+   단축·제휴 링크(쿠팡 파트너스 등)는 '내 제휴 링크' 체크 없이는 쓰지 않아요. */
+const TRACK_PARAM=/^(utm_|nt_|aff_)|^(fbclid|gclid|NaPm|nl-query|nl-ts-pid|lptag|subid|traceid|src|spec|addtag|ctag|wPcid|wRef|wTime|redirect|isAddedCart|sk|afSmartRedirect|tracelog)$/i;
+const REDIRECT_HOST=/(^|\.)(link\.coupang\.com|coupa\.ng|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|click\.linkprice\.com|adcr\.naver\.com|naver\.me|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|linktr\.ee|link\.inpock\.co\.kr)$/i;
+function cleanUrl(u){try{const x=new URL(u);let n=0;[...x.searchParams.keys()].forEach(k=>{if(TRACK_PARAM.test(k)){x.searchParams.delete(k);n++}});return{url:n?x.toString():u,removed:n}}catch(e){return{url:u,removed:0}}}
+const isRedirect=u=>{try{return REDIRECT_HOST.test(new URL(u).hostname)}catch(e){return false}};
+const REDIRECT_MSG="단축·제휴 링크예요. 내 제휴 링크라면 '내 제휴 링크' 체크를 해 주시고, 아니면 판매처 상품 페이지 주소로 바꿔 주세요 (남의 링크면 수수료가 그 사람에게 가요).";
 function renderAdmin(){
   if(!S.owner)return;
   $$("#admTabs [data-tab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.tab===tab));
   $$("[data-panel]").forEach(p=>p.hidden=p.dataset.panel!==tab);
-  $("#iList").innerHTML=S.items.length?[...S.items].sort(byNew).map(it=>`<div class="arow">${thumb(it)}
+  const lq=norm($("#iListQ").value);
+  const ilist=[...S.items].sort(byNew).filter(it=>!lq||norm([it.brand,it.name,it.person,showOf(it.showId).title,it.ep].join(" ")).includes(lq));
+  $("#iListCount").textContent=S.items.length?(lq?`찾은 아이템 ${ilist.length}개 / 전체 ${S.items.length}개`:`등록한 아이템 ${S.items.length}개`):"";
+  $("#iList").innerHTML=!S.items.length?`<p class="empty">등록된 아이템이 없어요. 왼쪽에서 첫 아이템을 등록해 보세요.</p>`:!ilist.length?`<p class="empty">찾는 아이템이 없어요.</p>`:ilist.map(it=>`<div class="arow">${thumb(it)}
     <div style="min-width:0"><b>${esc(it.brand)} · ${esc(it.name)}</b><span>${esc(it.person)} · ${esc(showOf(it.showId).title)} ${esc(it.ep||"")} · ${won(it.price)}${it.priceCheckFailed?" · <em class=\"warn\">가격 확인 실패</em>":it.priceCheckedAt?" · "+md(it.priceCheckedAt)+" 확인":""}</span></div>
-    <div class="btns"><button class="ghost" data-copyurl="${esc(it.id)}">주소 복사</button><button class="ghost" data-edit="item:${esc(it.id)}">수정</button>${delBtn("item",it.id)}</div></div>`).join("")
-    :`<p class="empty">등록된 아이템이 없어요. 왼쪽에서 첫 아이템을 등록해 보세요.</p>`;
+    <div class="btns"><button class="ghost" data-copyurl="${esc(it.id)}">주소 복사</button><button class="ghost" data-edit="item:${esc(it.id)}">수정</button>${delBtn("item",it.id)}</div></div>`).join("");
   $("#sList").innerHTML=S.shows.length?[...S.shows].sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).map(s=>`<div class="arow">
     <div class="pv" style="background:${colorOf(s)}">${okUrl(s.posterUrl)?`<img src="${esc(s.posterUrl)}" alt="">`:""}</div>
     <div style="min-width:0"><b>${esc(s.title)}</b><span>${esc(s.platform)} · ${esc(s.ep||"회차 없음")} · 아이템 ${countFor(s.id)}개</span></div>
@@ -490,14 +500,19 @@ function renderAdmin(){
     <div class="top"><b>${r.auto?`<em class="auto">자동 수집</em> `:""}${esc(r.show)}</b><span>${esc(r.ep||"")}${r.who?" · "+esc(r.who):""}${r.cat?" · "+esc(r.cat):""} · ${md(r.at)}</span></div>
     <p>${linkify(r.desc)}</p>
     ${r.auto&&(r.brand||r.name)?`<div class="btns shopq"><span class="note">판매처 찾기</span>${shopSearch(r.brand+" "+r.name)}</div>`:""}
+    ${(r.auto&&isRedirect(shopUrlIn(r.desc)))||isRedirect(r.link)?`<p class="note warn">이 제보의 링크는 단축·제휴 링크라 남의 수수료 링크일 수 있어요. 구매 링크로 쓰지 말고 판매처에서 직접 찾아 주세요.</p>`:""}
     ${okUrl(r.link)&&/^https?:/i.test(r.link)?`<a class="note" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">${esc(r.link)}</a>`:""}
     <div class="btns"><button class="ghost" data-fromrep="${esc(r.id)}">이 제보로 아이템 등록</button>
-    <button class="ghost danger" data-done="${esc(r.id)}">${r.auto?"틀림·버리기":"처리 완료"}</button></div></div>`).join("")
+    <button class="ghost danger" data-done="${esc(r.id)}">${armed==="rep:"+r.id?"정말 버리기":"버리기 (등록 안 함)"}</button></div></div>`).join("")
     :`<p class="empty">아직 들어온 제보가 없어요. 방문자가 제보를 보내면 여기에 쌓여요.</p>`;
   const n=S.reports.length;
   ["#repCount","#repCount2"].forEach(s=>{$(s).hidden=!n;$(s).textContent=n});
 }
-function resetIForm(){editI=null;iImg=null;fetchedImg=null;fetchedList=null;$("#iForm").reset();setLinks([]);syncPersonNote();curImg("#iCur");$("#iFormTitle").textContent="아이템 등록";$("#iSubmit").textContent="등록하기";$("#iCancel").hidden=true;renderShowSelect()}
+function resetIForm(keep){
+  const kept=keep?{show:$("#iShow").value,ep:$("#iEp").value,person:$("#iPerson").value,plat:$("#iPlat").value}:null;
+  const keepOn=$("#iKeep").checked;
+  editI=null;iImg=null;fetchedImg=null;fetchedList=null;fromReport=null;lastFetched="";$("#iForm").reset();$("#iKeep").checked=keepOn;$("#iRepNote").hidden=true;
+  if(kept){$("#iShow").value=kept.show;$("#iEp").value=kept.ep;$("#iPerson").value=kept.person;$("#iPlat").value=kept.plat}setLinks([]);syncPersonNote();curImg("#iCur");$("#iFormTitle").textContent="아이템 등록";$("#iSubmit").textContent="등록하기";$("#iCancel").hidden=true;renderShowSelect()}
 function resetSForm(){editS=null;sImg=null;$("#sForm").reset();curImg("#sCur");$("#sFormTitle").textContent="프로그램 등록";$("#sSubmit").textContent="등록하기";$("#sCancel").hidden=true}
 async function shrink(f){
   // 큰 사진은 올리기 전에 가로세로 최대 1200px, webp로 줄여요
@@ -524,8 +539,15 @@ async function upload(input){
 function dbErr(e){console.error(e);toast("저장하지 못했어요. 로그인 상태를 확인하고 다시 시도해 주세요")}
 const must=r=>{if(r.error)throw r.error;return r};
 
+/* 연속 등록 체크 상태 기억 */
+try{$("#iKeep").checked=localStorage.getItem("eodi_keep")==="1"}catch(e){}
+$("#iKeep").addEventListener("change",()=>{try{localStorage.setItem("eodi_keep",$("#iKeep").checked?"1":"0")}catch(e){}});
 $("#iForm").addEventListener("submit",async e=>{
   e.preventDefault();if(!sb||!S.owner)return;
+  const rows=[[$("#iUrl"),$("#iAff")],...$$("#iLinks .lrow").map(r=>[r.querySelector(".lurl"),r.querySelector(".lafc")])];
+  const bad=rows.find(([u,a])=>u.value.trim()&&!a.checked&&isRedirect(u.value.trim()));
+  if(bad){toast("단축·제휴 링크가 있어요. 내 제휴 링크면 체크를, 아니면 판매처 주소로 바꿔 주세요");$("#iFetchNote").textContent=REDIRECT_MSG;bad[0].focus();return}
+  rows.forEach(([u,a])=>{if(u.value.trim()&&!a.checked)u.value=cleanUrl(u.value.trim()).url});
   const btn=$("#iSubmit");btn.disabled=true;
   try{
     const up=await upload($("#iImg"));
@@ -547,8 +569,15 @@ $("#iForm").addEventListener("submit",async e=>{
     if(fetchedList)doc.list_price=fetchedList;
     if(editI)must(await sb.from("items").update(doc).eq("id",editI));else must(await sb.from("items").insert(doc));
     if(!made&&!editI)must(await sb.from("shows").update({updated_at:now,...(ep?{ep}:{})}).eq("id",show.id));
-    toast((editI?"아이템을 수정했어요":"아이템을 등록했어요")+(made?` · ‘${title}’ 프로그램도 추가했어요`:""));resetIForm();
+    const wasEdit=!!editI,rep=fromReport;
+    let repDone=false;
+    if(rep&&!wasEdit){try{must(await sb.from("reports").delete().eq("id",rep));repDone=true}catch(e){console.error(e)}}
+    toast((wasEdit?"아이템을 수정했어요":"아이템을 등록했어요")+(made?` · ‘${title}’ 프로그램도 추가했어요`:"")+(repDone?" · 제보함에서도 뺐어요":""));
+    const keep=!wasEdit&&$("#iKeep").checked;
+    resetIForm(keep);
+    if(repDone)await loadReports();
     await loadData();
+    if(keep){$("#iForm").scrollIntoView({behavior:"smooth",block:"start"});$("#iUrl").focus()}
   }catch(err){err&&err.message==="SQL_PEOPLE"?toast("수파베이스에서 004 SQL을 먼저 실행해 주세요"):dbErr(err)}
   btn.disabled=false;
 });
@@ -567,9 +596,18 @@ $("#sForm").addEventListener("submit",async e=>{
   }catch(err){dbErr(err)}
   btn.disabled=false;
 });
-$("#iCancel").addEventListener("click",resetIForm);
+$("#iCancel").addEventListener("click",()=>resetIForm());
+$("#iUrl").addEventListener("paste",()=>setTimeout(()=>{
+  let u=$("#iUrl").value.trim();
+  if(!/^https?:\/\//i.test(u))return;
+  if(!$("#iAff").checked){
+    if(isRedirect(u)){$("#iFetchNote").textContent=REDIRECT_MSG;return}
+    const c=cleanUrl(u);if(c.removed){$("#iUrl").value=u=c.url;toast("링크 속 추적·제휴 표시를 지웠어요")}
+  }
+  if(u!==lastFetched&&!$("#iFetch").disabled)$("#iFetch").click();
+},0));
 $("#iFetch").addEventListener("click",async e=>{
-  const url=$("#iUrl").value.trim();
+  const url=$("#iUrl").value.trim();lastFetched=url;
   if(!/^https?:\/\//i.test(url)){toast("상품 링크를 먼저 붙여 넣어 주세요");$("#iUrl").focus();return}
   if(!sb||!S.owner)return;
   const btn=e.target;btn.disabled=true;btn.textContent="불러오는 중…";$("#iFetchNote").textContent="쇼핑몰에서 정보를 가져오는 중이에요. 몇 초 걸려요.";
@@ -591,6 +629,7 @@ $("#iFetch").addEventListener("click",async e=>{
       ?"불러오기 기능이 아직 설치되지 않았어요(수파베이스 함수 fetch-product).":"정보를 가져오지 못했어요. 직접 입력해 주세요.";
   }finally{btn.disabled=false;btn.textContent="링크로 불러오기"}
 });
+$("#iListQ").addEventListener("input",()=>renderAdmin());
 $("#pList").addEventListener("submit",async e=>{
   const f=e.target.closest(".prow");if(!f)return;e.preventDefault();
   const id=f.dataset.pid,name=f.querySelector(".pname").value.trim(),cur=S.people.find(p=>p.id===id);
@@ -763,17 +802,22 @@ document.addEventListener("click",async e=>{
       if(k==="item"&&editI===id)resetIForm();if(k==="show"&&editS===id)resetSForm();await loadData()}catch(err){dbErr(err)}
     return}
   if(b.dataset.fromrep){const r=S.reports.find(x=>x.id===b.dataset.fromrep);if(!r)return;
-    tab="items";renderAdmin();resetIForm();
+    tab="items";renderAdmin();resetIForm();fromReport=r.id;
     $("#iPerson").value=r.who||"";$("#iEp").value=r.ep||"";$("#iScene").value=r.auto?"":(r.desc||"");
     if(r.brand)$("#iBrand").value=r.brand;if(r.name)$("#iName").value=r.name;
-    if(r.auto&&shopUrlIn(r.desc))$("#iUrl").value=shopUrlIn(r.desc);
+    if(r.auto&&shopUrlIn(r.desc)){const su=shopUrlIn(r.desc);
+      if(isRedirect(su))setTimeout(()=>{$("#iFetchNote").textContent="블로그 글의 판매처 링크가 단축·제휴 링크라 넣지 않았어요 (남의 수수료 링크일 수 있어요). 제보함의 쇼핑몰 검색으로 상품을 찾아 주소를 직접 넣어 주세요."},0);
+      else $("#iUrl").value=cleanUrl(su).url}
     const ck=Object.keys(CATS).find(k=>CATS[k]===r.cat);if(ck)$("#iCat").value=ck;
     const s=findShow(r.show);$("#iShow").value=s?s.title:(r.show||"");syncShowNote();
     toast(r.auto?(s?"자동 수집 내용을 채웠어요. 출처 글과 맞는지 확인하고 구매 링크를 넣어 주세요":"자동 수집 내용을 채웠어요. 새 프로그램이라 플랫폼도 골라 주세요")
       :s?"제보 내용을 채웠어요. 브랜드와 상품명을 넣어 주세요":"제보 내용을 채웠어요. 새 프로그램이라 플랫폼도 골라 주세요");
+    $("#iRepNote").hidden=false;
+    if(r.auto&&$("#iUrl").value&&$("#iUrl").value!==lastFetched)$("#iFetch").click();
     $("#iForm").scrollIntoView({behavior:"smooth",block:"start"});return}
-  if(b.dataset.done){b.disabled=true;
-    try{must(await sb.from("reports").delete().eq("id",b.dataset.done));await loadReports();renderAdmin();toast("처리 완료로 제보함에서 뺐어요")}
+  if(b.dataset.done&&armed!=="rep:"+b.dataset.done){armed="rep:"+b.dataset.done;renderAdmin();return} /* 한 번 더 눌러야 버려요 */
+  if(b.dataset.done){armed=null;b.disabled=true;
+    try{must(await sb.from("reports").delete().eq("id",b.dataset.done));await loadReports();renderAdmin();toast("제보를 버렸어요")}
     catch(err){dbErr(err);b.disabled=false}return}
 });
 $("#ov").addEventListener("click",e=>{if(e.target.id==="ov")closeItem()});

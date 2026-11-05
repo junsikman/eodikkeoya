@@ -398,6 +398,11 @@ footer .logo{font-size:20px;color:var(--ink)}
 .seen-empty{display:grid;justify-items:start;gap:4px;padding:28px;grid-column:1/-1;max-width:none}
 .seen-empty p{margin:0}
 .seen-empty .primary{margin-top:12px}
+/* 관리자: 연속 등록·목록 검색 */
+.laff.keep{white-space:normal;align-items:flex-start;line-height:1.45}
+.laff.keep input{margin-top:3px}
+.alist-wrap{display:grid;gap:8px;align-content:start;min-width:0}
+.rep-note{color:var(--accent)}
 /* 프로그램 전체 페이지 */
 .sgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 18px}
 @media (max-width:1100px){.sgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -652,13 +657,15 @@ footer .logo{font-size:20px;color:var(--ink)}
           <option value="guess" selected>확인 중 — 아직 확인하고 있어요</option>
         </select></label>
         <label for="iScene">장면 설명<textarea id="iScene" maxlength="600" placeholder="어느 장면에서 어떻게 입었는지"></textarea></label>
-        <label class="laff" style="font-weight:500"><input type="checkbox" id="iAff"> 대표 링크가 제휴 링크예요</label>
+        <label class="laff" style="font-weight:500"><input type="checkbox" id="iAff"> 대표 링크가 내 제휴 링크예요 (내 쿠팡 파트너스 등일 때만)</label>
         <fieldset class="links"><legend>다른 구매처 (최대 5개 · 가격은 매일 자동 확인, 안 되는 쇼핑몰은 직접 입력)</legend>
           <div id="iLinks"></div>
           <button type="button" class="ghost" id="iAddLink">구매처 추가</button>
         </fieldset>
         <label for="iImg">상품 이미지<input id="iImg" type="file" accept="image/*"></label>
         <div class="curimg" id="iCur" hidden></div>
+        <p class="note rep-note" id="iRepNote" hidden>제보함의 제보로 등록 중이에요. 저장하면 그 제보는 제보함에서 자동으로 빠져요.</p>
+        <label class="laff keep" style="font-weight:500"><input type="checkbox" id="iKeep"> 다음 아이템도 같은 프로그램·회차·인물로 (등록 후 상품 칸만 비워요)</label>
         <div class="btns">
           <button class="primary" type="submit" id="iSubmit">등록하기</button>
           <button class="ghost" type="button" id="iCancel" hidden>수정 취소</button>
@@ -667,7 +674,11 @@ footer .logo{font-size:20px;color:var(--ink)}
       <datalist id="personList"></datalist>
       <datalist id="showOptions"></datalist>
     </div>
-    <div class="alist" id="iList"></div>
+    <div class="alist-wrap">
+      <input id="iListQ" type="search" placeholder="등록한 아이템 찾기 (브랜드·상품명·인물·프로그램)" aria-label="등록한 아이템 찾기" autocomplete="off">
+      <p class="note" id="iListCount"></p>
+      <div class="alist" id="iList"></div>
+    </div>
   </div>
 
   <div class="panel" data-panel="shows" hidden>
