@@ -71,7 +71,7 @@ const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,
 const S={items:[],shows:[],reports:[],people:[],itemsOk:false,showsOk:false,owner:false,noDb:false};
 const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,personId:r.person_id,verify:r.verify||"guess",sceneTime:r.scene_time||"",links:Array.isArray(r.links)?r.links:[],buyAffiliate:!!r.buy_affiliate,showId:r.show_id,ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toPerson=r=>({id:r.id,name:r.name});
-const VERIFY={official:"정품 확인",similar:"유사품",guess:"추정"};
+const VERIFY={official:"동일 제품",similar:"비슷한 제품",guess:"확인 중"};
 const SHOPS=[[/wconcept\.co\.kr$/,"W컨셉"],[/musinsa\.com$/,"무신사"],[/29cm\.co\.kr$/,"29CM"],[/coupang\.com$/,"쿠팡"],[/(smartstore|brand|shopping)\.naver\.com$/,"네이버"],[/zigzag\.kr$/,"지그재그"],[/a-bly\.com$/,"에이블리"],[/kream\.co\.kr$/,"KREAM"],[/ssg\.com$/,"SSG"],[/lotteon\.com$/,"롯데온"],[/hago\.kr$/,"하고"],[/wadiz\.kr$/,"와디즈"]];
 function shopName(url){try{const h=new URL(url).hostname.replace(/^(www|m)\./,"");const f=SHOPS.find(([re])=>re.test(h));return f?f[1]:h}catch(e){return "구매처"}}
 const httpUrl=u=>typeof u==="string"&&/^https?:\/\//i.test(u);
@@ -91,11 +91,19 @@ function topPriceHtml(it){
   if(hasNum(it.price)&&it.price<=min)return priceHtml(it);
   return `<b class="off">최저</b> ${won(min)}`;
 }
-const vfTag=it=>`<span class="vf vf-${esc(it.verify)}">${VERIFY[it.verify]||"추정"}</span>`;
+const vfTag=it=>`<span class="vf vf-${esc(it.verify)}">${VERIFY[it.verify]||"확인 중"}</span>`;
 const sceneText=it=>it.ep||"";
 const toShow=r=>({id:r.id,title:r.title,platform:r.platform,ep:r.ep,posterUrl:r.poster_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toReport=r=>({id:r.id,show:r.show,ep:r.ep,who:r.who,cat:r.cat,desc:r.descr,link:r.link,at:r.created_at,auto:r.source==="auto",brand:r.brand||"",name:r.name||""});
 let F={q:"",cat:"",show:"",person:""}, plat="전체", tab="items";
+/* 인물·아이템은 처음에 몇 개만 보여주고 '전체 보기'로 펼쳐요 (PC 12개, 휴대폰 8개) */
+const phoneMQ=matchMedia("(max-width:560px)");
+const firstN=()=>phoneMQ.matches?8:12;
+let allPeople=false,allItems=false,itemsKey="";
+function moreBtn(box,kind,open,total,unit){
+  $(box).innerHTML=total>firstN()?`<button class="ghost more-all" data-all="${kind}" aria-expanded="${open}">${open?"접기":`전체 보기 (${total.toLocaleString()}${unit})`}</button>`:"";
+}
+phoneMQ.addEventListener("change",()=>{renderPeople();renderItems();renderRecent();renderUps()});
 const showOf=id=>S.shows.find(s=>s.id===id)||{title:"알 수 없는 프로그램",platform:"",color:"#8A7A70"};
 const byNew=(a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||""));
 
@@ -124,52 +132,199 @@ function renderCats(){
    <svg viewBox="0 0 48 48" aria-hidden="true">${ICON[k]}</svg>
    <b>${v}</b>${cnt[k]?`<small>${cnt[k].toLocaleString()}</small>`:""}</button>`).join("");
 }
+function itemCard(it){
+  return `<button class="item" data-id="${esc(it.id)}">${thumb(it)}
+   <span class="br">${esc(it.brand)}${sampleTag(it)} ${vfTag(it)}</span><span class="nm">${esc(it.name)}</span><span class="pr">${topPriceHtml(it)}</span>
+   <span class="who">${esc(it.person)} · ${esc(showOf(it.showId).title)}</span></button>`;
+}
+/* 옆으로 넘기는 줄(PC·태블릿): 넘칠 때만 화살표를 보이고, 끝에 닿으면 그쪽 화살표를 흐리게 */
+function railNav(id){
+  const el=document.getElementById(id),nav=document.querySelector(`.rail-nav[data-rail="${id}"]`);
+  if(!nav)return;
+  const on=!!el&&!phoneMQ.matches&&el.scrollWidth>el.clientWidth+2;
+  nav.hidden=!on;if(!on)return;
+  const [prev,next]=nav.querySelectorAll("button");
+  prev.disabled=el.scrollLeft<=2;next.disabled=el.scrollLeft+el.clientWidth>=el.scrollWidth-2;
+  if(!el.dataset.navBound){el.dataset.navBound="1";el.addEventListener("scroll",()=>railNav(id),{passive:true})}
+}
+let itemsTotal=0;
+/* PC: '전체 보기'는 제목 옆 ‹ › 왼쪽에. 펼쳤을 때는 목록 맨 아래에도 '접기'를 하나 더 */
+function pcItemsMore(){
+  const top=$("#itemsMoreTop"),el=$("#itemGrid"),over=el.scrollWidth>el.clientWidth+2;
+  top.innerHTML=over&&itemsTotal?`<button class="ghost more-all in-head" data-all="items">${phoneMQ.matches?"전체 보기 ›":`전체 보기 (${itemsTotal.toLocaleString()}개)`}</button>`:"";
+  $("#itemsMore").innerHTML="";
+}
+window.addEventListener("resize",()=>{railNav("itemGrid");railNav("recentRail");pcItemsMore();railNav("ups");upsMore()});
+const RECENT_MAX=30,RECENT_MAIN=12;
 function renderRecent(){
-  const list=recent.map(id=>S.items.find(i=>i.id===id)).filter(Boolean);
+  const all=recent.map(id=>S.items.find(i=>i.id===id)).filter(Boolean),list=all.slice(0,RECENT_MAIN);
+  const c=$("#seenCount");if(c){c.hidden=!all.length;c.textContent=all.length}
+  if(curView==="seen")renderSeen();
   $("#clearRecent").hidden=!list.length;
-  $("#recentList").innerHTML=list.length?`<div class="rail">${list.map(it=>`<button class="mini" data-id="${esc(it.id)}">${thumb(it)}<b>${esc(it.brand)}</b><span>${esc(it.name)}</span></button>`).join("")}</div>`
-   :`<p class="empty">아직 본 아이템이 없어요. 아래 착장을 눌러보면 여기에 차례로 모여요.</p>`;
+  $("#recentList").innerHTML=!list.length?`<p class="empty">아직 본 아이템이 없어요. 아이템을 눌러보면 여기에 차례로 모여요.</p>`
+   :phoneMQ.matches?`<div class="rail">${list.map(it=>`<button class="mini" data-id="${esc(it.id)}">${thumb(it)}<b>${esc(it.brand)}</b><span>${esc(it.name)}</span></button>`).join("")}</div>`
+   :`<div class="items hrail" id="recentRail">${list.map(itemCard).join("")}${all.length>RECENT_MAIN?`<button type="button" class="rail-end rail-end-items" data-all="seen"><b>전체 보기</b><small>${all.length}개 모두 보기 ›</small></button>`:""}</div>`;
+  railNav("recentRail");
 }
 function countFor(sid){return S.items.filter(i=>i.showId===sid).length}
 function renderPeople(){
   const cnt={};S.items.forEach(i=>{if(i.person)cnt[i.person]=(cnt[i.person]||0)+1});
   const list=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-  $("#peopleList").innerHTML=!S.itemsOk?"":list.length?list.map(([n,c])=>`<button class="person" data-person="${esc(n)}">${esc(n)}<small>${c}</small></button>`).join("")
+  $("#peopleList").innerHTML=!S.itemsOk?"":list.length?list.slice(0,firstN()).map(([n,c])=>`<button class="person" data-person="${esc(n)}">${esc(n)}<small>${c}</small></button>`).join("")
    :`<p class="empty">아이템이 등록되면 인물이 여기에 모여요.</p>`;
+  $("#peopleMore").innerHTML="";
+  $("#peopleMoreTop").innerHTML=S.itemsOk&&list.length>firstN()?`<button class="ghost more-all in-head" data-all="people">${phoneMQ.matches?"전체 보기 ›":`전체 보기 (${list.length.toLocaleString()}명)`}</button>`:"";
   $("#personList").innerHTML=(S.peopleOk?S.people.map(p=>p.name):list.map(([n])=>n)).map(n=>`<option value="${esc(n)}">`).join("");
 }
-function renderItems(){
+function filteredItems(ignoreCat){
   const words=F.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const list=S.items.filter(it=>{
+  return S.items.filter(it=>{
     const hay=[it.brand,it.name,it.person,showOf(it.showId).title,CATS[it.cat],it.scene,it.ep].join(" ").toLowerCase();
-    return words.every(w=>hay.includes(w))&&(!F.cat||it.cat===F.cat)&&(!F.show||it.showId===F.show)&&(!F.person||it.person===F.person);
+    return words.every(w=>hay.includes(w))&&(ignoreCat||!F.cat||it.cat===F.cat)&&(!F.show||it.showId===F.show)&&(!F.person||it.person===F.person);
   }).sort(byNew);
-  let title="새로 올라온 착장",sub=`아이템 ${S.items.length}개`;
+}
+function renderItems(){
+  const list=filteredItems();
+  let title="새로 올라온 아이템",sub=`아이템 ${S.items.length}개`;
   if(F.q){title=`‘${F.q}’ 검색 결과`;sub=`아이템 ${list.length}개`}
-  else if(F.show){title=showOf(F.show).title+" 착장";sub=`아이템 ${list.length}개`}
-  else if(F.person){title=F.person+"의 착장";sub=`아이템 ${list.length}개`}
-  else if(F.cat){title=CATS[F.cat]+" 착장";sub=`아이템 ${list.length}개`}
+  else if(F.show){title=showOf(F.show).title+" 아이템";sub=`아이템 ${list.length}개`}
+  else if(F.person){title=F.person+"의 아이템";sub=`아이템 ${list.length}개`}
+  else if(F.cat){title=CATS[F.cat]+" 아이템";sub=`아이템 ${list.length}개`}
   if(F.cat&&(F.q||F.show||F.person))sub+=` · ${CATS[F.cat]}만`;
   $("#itemsTitle").textContent=title;$("#itemsSub").textContent=S.itemsOk?sub:"";
   $("#resetFilter").hidden=!(F.q||F.cat||F.show||F.person);
-  if(!S.itemsOk&&!S.noDb){$("#itemGrid").innerHTML="";return}
-  $("#itemGrid").innerHTML=S.noDb?`<p class="empty full">착장 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>`
-   :list.length?list.map(it=>`<button class="item" data-id="${esc(it.id)}">${thumb(it)}
-   <span class="br">${esc(it.brand)}${sampleTag(it)} ${vfTag(it)}</span><span class="nm">${esc(it.name)}</span><span class="pr">${topPriceHtml(it)}</span>
-   <span class="who">${esc(it.person)} · ${esc(showOf(it.showId).title)}</span></button>`).join("")
-   :`<p class="empty full">${S.items.length?"조건에 맞는 착장이 아직 없어요. 아래에서 제보해 주시면 확인해서 올려둘게요.":"아직 등록된 착장이 없어요."}</p>`;
+  const key=JSON.stringify(F),keyChanged=key!==itemsKey;if(keyChanged){itemsKey=key;allItems=false}
+  $("#itemsMore").innerHTML="";
+  if(!S.itemsOk&&!S.noDb)return; /* 데이터가 오기 전에는 미리 넣어 둔 목록을 그대로 둬요 */
+  $("#itemGrid").innerHTML=S.noDb?`<p class="empty full">아이템 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>`
+   :list.length?list.slice(0,RAIL_MAX).map(itemCard).join("")+(list.length>RAIL_MAX?railEnd("items",list.length,"개"):"")
+   :`<p class="empty full">${S.items.length?"조건에 맞는 아이템이 아직 없어요. 아래에서 제보해 주시면 확인해서 올려둘게요.":"아직 등록된 아이템이 없어요."}</p>`;
+  if(keyChanged)$("#itemGrid").scrollLeft=0;
+  $("#itemGrid").classList.toggle("expanded",allItems&&!phoneMQ.matches);
+  itemsTotal=S.itemsOk&&!S.noDb?list.length:0;
+  railNav("itemGrid");pcItemsMore();
+}
+function showCard(s){
+  return `<button class="show" data-show="${esc(s.id)}">${poster(s,`${s.ep?`<i class="new">NEW ${esc(s.ep)}</i>`:""}<i>${esc(s.platform)}</i>`)}
+   <span class="meta"><strong>${esc(s.title)}${sampleTag(s)}</strong>아이템 ${countFor(s.id)}개 · ${md(s.updatedAt)} 업데이트</span></button>`;
+}
+/* 최근 업데이트: 한 줄이 넘칠 때만 제목 옆 '전체 보기' (PC는 개수, 휴대폰은 짧게) */
+const RAIL_MAX=20; /* 메인 한 줄에 그리는 최대 개수 */
+const railEnd=(kind,n,unit)=>`<button type="button" class="rail-end rail-end-${kind}" data-all="${kind}"><b>전체 보기</b><small>${n.toLocaleString()}${unit} 모두 보기 ›</small></button>`;
+function upsMore(){
+  const el=$("#ups"),top=$("#upsMoreTop");if(!el||!top)return;
+  const over=el.scrollWidth>el.clientWidth+2,n=S.shows.length;
+  top.innerHTML=over&&n?`<button class="ghost more-all in-head" data-all="shows">${phoneMQ.matches?"전체 보기 ›":`전체 보기 (${n.toLocaleString()}개)`}</button>`:"";
 }
 function renderUps(){
   const ps=["전체",...new Set(S.shows.map(s=>s.platform).filter(Boolean))];
   if(!ps.includes(plat))plat="전체";
   $("#platTabs").innerHTML=S.shows.length?ps.map(p=>`<button class="chip" data-plat="${esc(p)}" aria-pressed="${p===plat}">${esc(p)} ${p==="전체"?S.shows.length:S.shows.filter(s=>s.platform===p).length}</button>`).join(""):"";
   const list=S.shows.filter(s=>plat==="전체"||s.platform===plat).sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||"")));
-  $("#upCount").textContent=S.showsOk?`착장이 새로 올라온 프로그램 ${S.shows.length}개`:"착장이 새로 올라온 프로그램";
-  $("#ups").innerHTML=!S.showsOk?"":list.length?list.map(s=>`<button class="show" data-show="${esc(s.id)}">${poster(s,`${s.ep?`<i class="new">NEW ${esc(s.ep)}</i>`:""}<i>${esc(s.platform)}</i>`)}
-   <span class="meta"><strong>${esc(s.title)}${sampleTag(s)}</strong>착장 ${countFor(s.id)}개 · ${md(s.updatedAt)} 업데이트</span></button>`).join("")
+  $("#upCount").textContent=S.showsOk?`아이템이 새로 올라온 프로그램 ${S.shows.length}개`:"아이템이 새로 올라온 프로그램";
+  $("#ups").innerHTML=!S.showsOk?"":list.length?list.slice(0,RAIL_MAX).map(showCard).join("")+(list.length>RAIL_MAX?railEnd("shows",S.shows.length,"개"):"")
    :`<p class="empty">아직 등록된 프로그램이 없어요.</p>`;
+  $("#ups").scrollLeft=0;
+  railNav("ups");upsMore();
 }
-function renderSite(){renderCats();renderRecent();renderPeople();renderItems();renderUps();renderShowSelect()}
+function renderSite(){renderCats();renderRecent();renderPeople();renderItems();renderUps();renderShowSelect();if(curView==="all")renderAll(false);if(curView==="shows")renderShowsPage(false);if(curView==="people")renderPeoplePage(false)}
+
+/* ---------- 아이템 전체 보기 페이지 (#all) — toftof 목록 구조 참고: 분류 칩, 정렬, 카드, 더보기 ---------- */
+let curView="site",allSort="new",allShown=0,siteY=0;
+const allStep=()=>phoneMQ.matches?12:24;
+function lowPrice(it){const ps=buyLinks(it).map(l=>l.price).filter(hasNum);return ps.length?Math.min(...ps):(hasNum(it.price)?it.price:null)}
+function feedCard(it){
+  const s=showOf(it.showId),ls=buyLinks(it),m=ls[0];
+  return `<article class="fc">
+   <button type="button" class="fc-th" data-id="${esc(it.id)}" aria-label="${esc(it.brand+" "+it.name)} 자세히 보기">${thumb(it)}</button>
+   <div class="fc-info">
+    <p class="fc-who"><button type="button" class="lnk" data-allperson="${esc(it.person)}">${esc(it.person)}</button> · ${esc(s.title)}${it.ep?" "+esc(it.ep):""}</p>
+    <button type="button" class="fc-name" data-id="${esc(it.id)}"><span class="br">${esc(it.brand)}${sampleTag(it)} ${vfTag(it)}</span><span class="nm">${esc(it.name)}</span></button>
+    <div class="fc-foot"><span class="pr">${topPriceHtml(it)}</span>${m?`<a class="fc-buy" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer${m.aff?" sponsored":""}" data-item="${esc(it.id)}">${esc(m.shop)}에서 보기</a>`
+     :`<button type="button" class="fc-buy none" data-id="${esc(it.id)}">자세히</button>`}</div>
+   </div>
+  </article>`;
+}
+function renderAll(reset){
+  if(reset||!allShown)allShown=allStep();
+  if(document.activeElement!==$("#allQ"))$("#allQ").value=F.q;
+  let list=filteredItems();
+  if(allSort!=="new"){const k=allSort==="low"?1:-1;list=list.slice().sort((a,b)=>{const x=lowPrice(a),y=lowPrice(b);return x===null?1:y===null?-1:(x-y)*k})}
+  let title="아이템 전체";
+  if(F.q)title=`‘${F.q}’ 검색 결과`;else if(F.person)title=F.person+"의 아이템";else if(F.show)title=showOf(F.show).title+" 아이템";else if(F.cat)title=CATS[F.cat]+" 아이템";
+  $("#allTitle").innerHTML=`${esc(title)} <small>${S.itemsOk?list.length.toLocaleString()+"개":""}</small>`;
+  const base=filteredItems(true),cnt={};base.forEach(i=>cnt[i.cat]=(cnt[i.cat]||0)+1);
+  $("#allCats").innerHTML=`<button type="button" class="chip" data-allcat="" aria-pressed="${!F.cat}">전체 ${base.length}</button>`+
+    Object.entries(CATS).filter(([k])=>cnt[k]||F.cat===k).map(([k,v])=>`<button type="button" class="chip" data-allcat="${k}" aria-pressed="${F.cat===k}">${v} ${cnt[k]||0}</button>`).join("");
+  const tags=[];
+  if(F.person)tags.push(["person",F.person]);if(F.show)tags.push(["show",showOf(F.show).title]);if(F.q)tags.push(["q",`‘${F.q}’`]);
+  $("#allTags").innerHTML=tags.map(([k,v])=>`<button type="button" class="tagx" data-allclear="${k}" aria-label="${esc(v)} 조건 빼기">${esc(v)} <span aria-hidden="true">×</span></button>`).join("");
+  $$("#allSort [data-sort]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.sort===allSort));
+  $("#allList").innerHTML=!S.itemsOk?"":list.length?list.slice(0,allShown).map(feedCard).join("")
+    :`<p class="empty">${S.items.length?"조건에 맞는 아이템이 아직 없어요.":"아직 등록된 아이템이 없어요."}</p>`;
+  const left=list.length-allShown;
+  $("#allMore").innerHTML=left>0?`<button type="button" class="ghost more-all" data-allmore="1">더보기 (${left.toLocaleString()}개 남음)</button>`:"";
+}
+let siteF=null;
+function rememberSite(){if(curView==="site"){siteY=scrollY;siteF={...F}}}
+function openAll(nf){rememberSite();if(nf){F={q:"",cat:"",show:"",person:"",...nf}}history.pushState({fromSite:1},"","#all");route()}
+
+/* ---------- 프로그램 전체 페이지 (#shows) — 아이템 전체 페이지와 같은 구조 ---------- */
+let showsPlat="전체",showsSort="recent",showsShown=0;
+const showsStep=()=>phoneMQ.matches?12:24;
+function renderShowsPage(reset){
+  if(reset||!showsShown)showsShown=showsStep();
+  const ps=["전체",...new Set(S.shows.map(s=>s.platform).filter(Boolean))];
+  if(!ps.includes(showsPlat))showsPlat="전체";
+  $("#showsPlats").innerHTML=ps.map(p=>`<button type="button" class="chip" data-splat="${esc(p)}" aria-pressed="${p===showsPlat}">${esc(p)} ${p==="전체"?S.shows.length:S.shows.filter(s=>s.platform===p).length}</button>`).join("");
+  const list=S.shows.filter(s=>showsPlat==="전체"||s.platform===showsPlat);
+  if(showsSort==="items")list.sort((a,b)=>countFor(b.id)-countFor(a.id));
+  else if(showsSort==="name")list.sort((a,b)=>String(a.title).localeCompare(String(b.title),"ko"));
+  else list.sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||"")));
+  $("#showsTitle").innerHTML=`${showsPlat==="전체"?"프로그램 전체":esc(showsPlat)+" 프로그램"} <small>${S.showsOk?list.length.toLocaleString()+"개":""}</small>`;
+  $$("#showsSort [data-ssort]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.ssort===showsSort));
+  $("#showsList").innerHTML=!S.showsOk?"":list.length?list.slice(0,showsShown).map(showCard).join(""):`<p class="empty">아직 등록된 프로그램이 없어요.</p>`;
+  const left=list.length-showsShown;
+  $("#showsMore").innerHTML=left>0?`<button type="button" class="ghost more-all" data-smore="1">더보기 (${left.toLocaleString()}개 남음)</button>`:"";
+}
+let peopleSort="count",peopleShown=0;
+const peopleStep=()=>phoneMQ.matches?30:60;
+function peopleData(){
+  const m=new Map();
+  S.items.forEach(it=>{if(!it.person)return;const p=m.get(it.person)||{name:it.person,count:0,latest:"",show:""};
+    p.count++;if(String(it.createdAt||"")>p.latest){p.latest=String(it.createdAt||"");p.show=showOf(it.showId).title}m.set(it.person,p)});
+  return [...m.values()];
+}
+function renderPeoplePage(reset){
+  if(reset||!peopleShown)peopleShown=peopleStep();
+  const q=norm($("#peopleQ").value);
+  let list=peopleData().filter(p=>!q||norm(p.name).includes(q));
+  if(peopleSort==="name")list.sort((a,b)=>a.name.localeCompare(b.name,"ko"));
+  else if(peopleSort==="recent")list.sort((a,b)=>b.latest.localeCompare(a.latest));
+  else list.sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,"ko"));
+  $("#peopleTitle").innerHTML=`인물 전체 <small>${S.itemsOk?list.length.toLocaleString()+"명":""}</small>`;
+  $$("#peopleSort [data-psort]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.psort===peopleSort));
+  $("#peoplePageList").innerHTML=!S.itemsOk?"":list.length?list.slice(0,peopleShown).map(p=>`<button type="button" class="pc" data-pperson="${esc(p.name)}">
+    <span class="pc-name">${esc(p.name)}</span><span class="pc-sub">아이템 ${p.count}개</span>${p.show?`<span class="pc-show">${esc(p.show)}</span>`:""}</button>`).join("")
+    :`<p class="empty">${q?"이 이름의 인물이 아직 없어요.":"아이템이 등록되면 인물이 여기에 모여요."}</p>`;
+  const left=list.length-peopleShown;
+  $("#peoplePageMore").innerHTML=left>0?`<button type="button" class="ghost more-all" data-pmore="1">더보기 (${left.toLocaleString()}명 남음)</button>`:"";
+}
+function openPeople(){rememberSite();history.pushState({fromSite:1},"","#people");route()}
+$("#peopleQ").addEventListener("input",()=>renderPeoplePage(true));
+/* ---------- 최근 본 아이템 페이지 (#seen): 열어본 아이템이 자동으로 쌓여요 ---------- */
+let seenArmed=false;
+function renderSeen(){
+  const list=recent.map(id=>S.items.find(i=>i.id===id)).filter(Boolean);
+  $("#seenTitle").innerHTML=`최근 본 아이템 <small>${S.itemsOk?list.length+"개":""}</small>`;
+  $("#seenClear").hidden=!list.length;$("#seenClear").textContent=seenArmed?"정말 모두 지우기":"모두 지우기";
+  $("#seenList").innerHTML=!S.itemsOk?"":list.length?list.map(feedCard).join("")
+    :`<div class="empty seen-empty"><p>아직 본 아이템이 없어요.</p><p>아이템을 눌러 보면 여기에 최근 순서로 모여요.</p><button type="button" class="primary" data-all="items">아이템 둘러보기</button></div>`;
+}
+function openSeen(){rememberSite();history.pushState({fromSite:1},"","#seen");route()}
+$(".nav-seen").addEventListener("click",e=>{e.preventDefault();if(curView!=="seen")openSeen()});
+function openShows(){rememberSite();history.pushState({fromSite:1},"","#shows");route()}
+function leaveAll(){if(history.state&&history.state.fromSite)history.back();else{history.pushState(null,"",location.pathname);route()}}
 
 /* ---------- item modal ---------- */
 const shortId=id=>String(id).slice(0,8);
@@ -179,7 +334,7 @@ function openItem(id,fromHash){
   const it=S.items.find(i=>i.id===id);if(!it)return;
   track(BASE_PATH+"item/"+String(id).slice(0,8)+"/",`${it.person} · ${it.brand} ${it.name}`);
   if(!fromHash){const h="#i/"+shortId(id);if(location.hash!==h){history.pushState(null,"",h);itemPushed=true}}
-  recent=[id,...recent.filter(x=>x!==id)].slice(0,12);saveRecent();renderRecent();
+  recent=[id,...recent.filter(x=>x!==id)].slice(0,RECENT_MAX);saveRecent();renderRecent();
   const s=showOf(it.showId);
   const same=S.items.filter(i=>i.person===it.person&&i.id!==it.id).slice(0,3);
   $("#ov").innerHTML=`<div class="md" role="dialog" aria-modal="true" aria-label="${esc(it.name)}">
@@ -191,7 +346,7 @@ function openItem(id,fromHash){
    ${it.scene?`<p class="scene">${esc(it.scene)}</p>`:""}
    ${(()=>{const ls=buyLinks(it);if(!ls.length)return `<p class="note">구매처 정보가 아직 없어요.</p>`;
      return `<div class="buys">${ls.map(l=>`<a class="${l.main?"primary":"ghost"}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer${l.aff?" sponsored":""}">${esc(l.shop)}${hasNum(l.price)?` <b class="lp">${won(l.price)}</b>`:" 보기"}${l.lowest?' <small class="low">최저가</small>':""}${l.aff?' <small class="aff">제휴</small>':""}</a>`).join("")}</div>${ls.some(l=>l.aff)?`<p class="note">‘제휴’ 링크로 구매하면 어디꺼야?가 수수료를 받을 수 있어요.</p>`:""}`})()}
-   ${same.length?`<div><b style="font-size:15px">${esc(it.person)}의 다른 착장</b><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">${same.map(x=>`<button class="mini" data-id="${esc(x.id)}">${thumb(x)}<span style="font-size:13px">${esc(x.name)}</span></button>`).join("")}</div></div>`:""}
+   ${same.length?`<div><b style="font-size:15px">${esc(it.person)}의 다른 아이템</b><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">${same.map(x=>`<button class="mini" data-id="${esc(x.id)}">${thumb(x)}<span style="font-size:13px">${esc(x.name)}</span></button>`).join("")}</div></div>`:""}
    </div></div>`;
   $("#ov").dataset.item=it.id;$("#ov").hidden=false;$("#close").focus();document.body.style.overflow="hidden";
 }
@@ -529,24 +684,69 @@ function route(){
     const it=S.items.find(i=>shortId(i.id)===h.slice(3).toLowerCase());
     if(it&&!(!$("#ov").hidden&&$("#ov").dataset.item===it.id))openItem(it.id,true);
   }else if(!$("#ov").hidden){itemPushed=false;hideItem()}
-  const adm=h==="#admin";
-  $("#site").hidden=adm;$("#admin").hidden=!adm;
+  const adm=h==="#admin",prev=curView;
+  curView=adm?"admin":(h==="#all"||(h.startsWith("#i/")&&prev==="all"))?"all":(h==="#shows"||(h.startsWith("#i/")&&prev==="shows"))?"shows":(h==="#people")?"people":(h==="#seen"||(h.startsWith("#i/")&&prev==="seen"))?"seen":"site";
+  $("#site").hidden=curView!=="site";$("#allPage").hidden=curView!=="all";$("#showsPage").hidden=curView!=="shows";$("#peoplePage").hidden=curView!=="people";$("#seenPage").hidden=curView!=="seen";$("#admin").hidden=!adm;
   $("#login").hidden=!adm||S.owner;$("#admBody").hidden=!S.owner;
   if(adm){if(S.owner)renderAdmin();window.scrollTo(0,0)}
+  if(curView!==prev){
+    if(curView==="all"){const why=F.q?"검색: "+F.q:F.person?"인물: "+F.person:F.show?"프로그램: "+showOf(F.show).title:F.cat?"분류: "+(CATS[F.cat]||F.cat):"";track(BASE_PATH+"#all","아이템 전체"+(why?" · "+why:""))}
+    else if(curView==="shows")track(BASE_PATH+"#shows","프로그램 전체");
+    else if(curView==="people")track(BASE_PATH+"#people","인물 전체");
+    else if(curView==="seen")track(BASE_PATH+"#seen","최근 본 아이템");
+  }
+  if(curView==="all"&&prev!=="all"){allSort="new";renderAll(true);window.scrollTo(0,0)}
+  if(curView==="shows"&&prev!=="shows"){renderShowsPage(true);window.scrollTo(0,0)}
+  if(curView==="seen"&&prev!=="seen"){seenArmed=false;renderSeen();window.scrollTo(0,0)}
+  if(curView==="people"&&prev!=="people"){$("#peopleQ").value="";peopleSort="count";renderPeoplePage(true);window.scrollTo(0,0)}
+  if(curView==="site"&&(prev==="all"||prev==="shows"||prev==="people"||prev==="seen")){if(siteF){F={...siteF};$("#q").value=F.q}renderCats();renderItems();window.scrollTo(0,siteY)}
 }
 window.addEventListener("hashchange",route);
 
 /* ---------- events ---------- */
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.all==="seen")return openSeen();
+  if(b.closest("#seenPage")){
+    if(b.id==="seenBack")return leaveAll();
+    if(b.id==="seenClear"){if(!seenArmed){seenArmed=true;return renderSeen()}seenArmed=false;recent=[];saveRecent();renderRecent();renderSeen();return toast("최근 본 아이템을 지웠어요")}
+  }
+  if(b.dataset.all==="items")return openAll();
+  if(b.dataset.all==="shows")return openShows();
+  if(b.closest("#peoplePage")){
+    if(b.id==="peopleBack")return leaveAll();
+    if(b.dataset.psort){peopleSort=b.dataset.psort;return renderPeoplePage(true)}
+    if(b.dataset.pmore)return peopleShown+=peopleStep(),renderPeoplePage(false);
+    if(b.dataset.pperson)return openAll({person:b.dataset.pperson});
+  }
+  if(b.closest("#showsPage")){
+    if(b.id==="showsBack")return leaveAll();
+    if(b.dataset.splat){showsPlat=b.dataset.splat;return renderShowsPage(true)}
+    if(b.dataset.ssort){showsSort=b.dataset.ssort;return renderShowsPage(true)}
+    if(b.dataset.smore)return showsShown+=showsStep(),renderShowsPage(false);
+    if(b.dataset.show)return openAll({show:b.dataset.show});
+  }
+  if(b.closest("#allPage")){
+    if(b.id==="allBack")return leaveAll();
+    if(b.dataset.allcat!==undefined){F.cat=b.dataset.allcat;return renderAll(true)}
+    if(b.dataset.allclear){F[b.dataset.allclear]="";if(b.dataset.allclear==="q")$("#q").value="";return renderAll(true)}
+    if(b.dataset.allperson!==undefined){F={q:"",cat:"",show:"",person:b.dataset.allperson};$("#q").value="";renderAll(true);return window.scrollTo(0,0)}
+    if(b.dataset.sort){allSort=b.dataset.sort;return renderAll(true)}
+    if(b.dataset.allmore)return allShown+=allStep(),renderAll(false);
+  }
   if(b.id==="close")return closeItem();
   if(b.dataset.share)return shareItem(b.dataset.share);
   if(b.dataset.copyurl){const it=S.items.find(i=>i.id===b.dataset.copyurl);if(!it)return;const url=itemUrl(it);
     try{await navigator.clipboard.writeText(url);toast("아이템 주소를 복사했어요. 새로 올린 아이템은 1시간쯤 뒤에 페이지가 생겨요")}catch(e){prompt("이 주소를 복사해 주세요",url)}return}
+  if(b.classList.contains("rail-btn")){const el=document.getElementById(b.closest(".rail-nav").dataset.rail);if(el)el.scrollBy({left:(+b.dataset.dir)*el.clientWidth*0.9});return}
   if(b.dataset.id)return openItem(b.dataset.id);
-  if(b.dataset.cat){if(F.cat!==b.dataset.cat)track("둘러보기: "+(CATS[b.dataset.cat]||b.dataset.cat),"",true);F.cat=F.cat===b.dataset.cat?"":b.dataset.cat;renderCats();renderItems();if(F.cat)go();return}
-  if(b.dataset.show){F={q:"",cat:"",show:b.dataset.show,person:""};$("#q").value="";renderCats();renderItems();go();return}
-  if(b.dataset.person){F={q:"",cat:"",show:"",person:b.dataset.person};$("#q").value="";renderCats();renderItems();go();return}
+  if(b.dataset.all==="people")return openPeople();
+  if(b.dataset.all){const p=b.dataset.all==="people",wasOpen=b.getAttribute("aria-expanded")==="true";
+    if(p){allPeople=!allPeople;renderPeople()}else{allItems=!allItems;renderItems()}
+    if(wasOpen)document.getElementById(p?"people":"items").scrollIntoView({block:"start"});return}
+  if(b.dataset.cat){track("둘러보기: "+(CATS[b.dataset.cat]||b.dataset.cat),"",true);return openAll({cat:b.dataset.cat})}
+  if(b.dataset.show)return openAll({show:b.dataset.show});
+  if(b.dataset.person)return openAll({person:b.dataset.person});
   if(b.dataset.plat){plat=b.dataset.plat;renderUps();return}
   if(b.id==="resetFilter"){F={q:"",cat:"",show:"",person:""};$("#q").value="";renderCats();renderItems();return}
   if(b.id==="clearRecent"){recent=[];saveRecent();renderRecent();toast("최근 본 아이템을 지웠어요");return}
@@ -577,11 +777,14 @@ document.addEventListener("click",async e=>{
     catch(err){dbErr(err);b.disabled=false}return}
 });
 $("#ov").addEventListener("click",e=>{if(e.target.id==="ov")closeItem()});
+$("#allList").addEventListener("click",e=>{const a=e.target.closest(".fc-buy[href]");if(!a)return;const it=S.items.find(i=>i.id===a.dataset.item);
+  track("구매처 클릭: "+(a.textContent.trim().split(/\s/)[0]||"")+" · "+(it?it.name:""),"",true)});
 $("#ov").addEventListener("click",e=>{const a=e.target.closest(".buys a");if(!a)return;const it=S.items.find(i=>i.id===$("#ov").dataset.item);
   track("구매처 클릭: "+(a.textContent.trim().split(/\s/)[0]||"")+" · "+(it?it.name:""),"",true)});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#ov").hidden)closeItem()});
-$("#searchForm").addEventListener("submit",e=>{e.preventDefault();if($("#q").value.trim())track("검색: "+$("#q").value.trim().slice(0,60),"",true);F={q:$("#q").value,cat:"",show:"",person:""};renderCats();renderItems();go()});
-$("#q").addEventListener("input",()=>{F.q=$("#q").value;F.show="";F.person="";renderItems()});
+$("#searchForm").addEventListener("submit",e=>{e.preventDefault();const q=$("#q").value.trim();if(q)track("검색: "+q.slice(0,60),"",true);openAll({q})});
+/* 아이템 전체 페이지 안의 검색창: 새 검색어로 다시 찾기 */
+$("#allSearch").addEventListener("submit",e=>{e.preventDefault();const q=$("#allQ").value.trim();if(q)track("검색: "+q.slice(0,60),"",true);F={q:"",cat:"",show:"",person:"",q};renderAll(true);window.scrollTo(0,0)});
 
 /* ---------- boot ---------- */
 renderSite();

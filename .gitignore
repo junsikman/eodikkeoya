@@ -3,3 +3,4 @@ _site/
 # 에이전트 스킬 (skills-lock.json으로 다시 설치: npx skills experimental_install)
 .agents/
 .claude/skills/
+.taste-skill/

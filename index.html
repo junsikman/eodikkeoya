@@ -3,19 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>어디꺼야?</title>
-<meta name="description" content="방송·유튜브에 나온 옷, 가방, 모자, 소품이 어디 건지 찾아드려요. 출연자 착장 정보와 구매처를 한곳에서.">
+<title>어디꺼야? - 방송 속 연예인 착장·패션·뷰티·식품 아이템 정보</title>
+<meta name="description" content="드라마·예능·유튜브에 나온 연예인 착장, 패션, 뷰티, 식품, 인테리어 아이템이 어디 건지 찾아드려요. 출연자별·프로그램별로 브랜드·상품명·가격·구매처를 한곳에서 확인하세요.">
 <meta name="naver-site-verification" content="930213234cc4d5c319572ff11cf4cc0341717d9d">
 <meta name="google-site-verification" content="W5TESImxko9pvmM-zqYGP3kCQIPOA86405ZDYVsB6hc">
 <meta name="google-site-verification" content="kqLsmZUxZOi1GGiNgEECy12XrjMWfy_Wq9HRa5E-Jtk">
 <link rel="canonical" href="__SITE_URL__/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="어디꺼야?">
-<meta property="og:title" content="어디꺼야? · 방송·유튜브 제품 정찰대">
-<meta property="og:description" content="방송 나온 아이템, 궁금하면 저한테 말해요. 제가 찾아볼게요.">
+<meta property="og:title" content="어디꺼야? · 방송 속 연예인 착장·아이템 정보">
+<meta property="og:description" content="방송에 나온 그 옷, 그 화장품, 그 음식 어디 거지? 연예인 착장·패션·뷰티·식품 아이템 정보를 찾아드려요.">
 <meta property="og:image" content="__SITE_URL__/og-default.jpg">
 <meta property="og:url" content="__SITE_URL__/">
 <meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"어디꺼야?","alternateName":["어디꺼야","wherefrom"],"url":"__SITE_URL__/","description":"드라마·예능·유튜브에 나온 연예인 착장, 패션, 뷰티, 식품, 인테리어 아이템이 어디 건지 찾아드려요. 출연자별·프로그램별로 브랜드·상품명·가격·구매처를 한곳에서 확인하세요.","inLanguage":"ko"}</script>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
@@ -40,9 +41,11 @@ body{background:var(--bg);overflow-x:clip;color:var(--ink);font-family:var(--bod
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg-lo)}
 .wrap{max-width:1180px;margin:0 auto}
 a{color:inherit}
+a.item{text-decoration:none} /* 미리 넣어 둔 아이템 카드(링크) */
 button{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
 h1,h2,h3{text-wrap:balance;margin:0}
+body{word-break:keep-all;overflow-wrap:break-word} /* 한글 단어가 줄 끝에서 잘리지 않게 (띄어쓰기에서만 줄바꿈) */
 
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(var(--bg-rgb),.8);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid transparent;
   margin:0 calc(-1 * max(16px,env(safe-area-inset-right,0px))) 0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));
@@ -124,8 +127,8 @@ section{padding-block:44px;border-top:1px solid var(--line)}
 .show .meta strong{color:var(--ink);font-weight:700;display:block;font-size:17px}
 
 .people{display:flex;flex-wrap:wrap;gap:10px}
-.person{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:9px 18px;font-size:17px;font-weight:700;display:flex;gap:10px;align-items:baseline}
-.person small{color:var(--muted);font-weight:500;font-size:14px;font-variant-numeric:tabular-nums}
+.person{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 15px;font-size:15px;font-weight:700;display:flex;gap:8px;align-items:baseline}
+.person small{color:var(--muted);font-weight:500;font-size:13px;font-variant-numeric:tabular-nums}
 .person:hover{background:var(--surface-2)}
 
 .items{display:grid;grid-template-columns:repeat(4,1fr);gap:30px 18px}
@@ -167,9 +170,14 @@ fieldset.links legend{font-size:14px;font-weight:700;padding:0 4px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
 .ups{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
 
-.req{background:var(--surface);border-radius:var(--r);padding:36px;display:grid;grid-template-columns:1fr 1.3fr;gap:32px;border:1px solid var(--line)}
+.req{background:var(--surface);border-radius:var(--r);padding:36px;display:grid;grid-template-columns:fit-content(560px) minmax(0,1fr);gap:32px;border:1px solid var(--line)}
 .req h2{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.3}
 .req p{color:var(--muted);margin:12px 0 0}
+.req p .ln{display:block} /* 문장마다 새 줄 */
+@media (min-width:760px){.req p .ln{white-space:nowrap}}
+.req-art{margin-top:28px;width:260px;max-width:70%;aspect-ratio:1;border-radius:50%;overflow:hidden;background:var(--bg)}
+.req-art img{width:100%;height:100%;object-fit:cover;object-position:50% 40%}
+@media (max-width:1100px){.req{grid-template-columns:1fr}}
 form{display:grid;gap:12px;min-width:0}
 label{font-size:14px;font-weight:700;display:grid;gap:6px;min-width:0;color:var(--ink)}
 input,textarea,select{font:inherit;font-size:16px;color:var(--ink);background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:8px;padding:11px 12px;width:100%}
@@ -242,6 +250,7 @@ footer .logo{font-size:20px;color:var(--ink)}
   .hero-art img{position:absolute;inset:0;right:auto;width:100%;height:100%;transform:none;object-fit:cover;object-position:50% 35%;
     -webkit-mask-image:radial-gradient(ellipse 72% 72% at 50% 45%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 72% 72% at 50% 45%,#000 50%,transparent 100%)}
   .hero-art::before,.hero-art::after{display:none}
+  .req-art{display:none} /* 휴대폰에서는 제보 칸 미어캣 숨김 */
   .hero-in{gap:16px}
   .hero .eyebrow{font-size:13px}
   .hero h1{font-size:3.25rem}
@@ -255,7 +264,169 @@ footer .logo{font-size:20px;color:var(--ink)}
   .md{grid-template-columns:1fr} .md>.th{border-radius:var(--r) var(--r) 0 0;min-height:240px}
   .row{grid-template-columns:1fr} .req{padding:22px}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+/* 휴대폰(560px 이하) 글씨 줄이기 — 입력칸은 16px 이상 그대로(아이폰 확대 방지) */
+@media (max-width:560px){
+  body{font-size:15px}
+  .logo{font-size:22px}
+  .hero h1{font-size:2.75rem}
+  .hero p.lead{font-size:16px}
+  .sh h2{font-size:24px}
+  .sh p{font-size:14px}
+  .more{font-size:14px}
+  .chip{font-size:14px;padding:6px 14px}
+  .person{font-size:13px;padding:6px 12px;gap:6px}
+  .person small{font-size:12px}
+  .show .meta{font-size:14px}
+  .show .meta strong{font-size:15px}
+  .poster .t{font-size:20px}
+  .item .br{font-size:13px}
+  .item .nm{font-size:15px}
+  .item .pr{font-size:15px}
+  .item .who{font-size:13px}
+  .empty{font-size:15px}
+  .req h2{font-size:24px}
+  .md .br{font-size:14px}
+  .md h3{font-size:20px}
+  .md .pr{font-size:19px}
+  .md dl{font-size:14px}
+  footer{font-size:13px}
+  footer .logo{font-size:18px}
+  .all-row .more-all{font-size:14px} /* 아래 전역 규칙보다 우선 */
+}
+/* PC·태블릿(561px 이상): 새로 올라온 아이템·최근 본 아이템을 한 줄로 두고 옆으로 넘겨요 */
+.sh-side{display:flex;align-items:center;gap:16px}
+.rail-nav{display:flex;gap:8px}
+.rail-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:22px;line-height:1;display:grid;place-items:center;padding:0 0 3px;transition:background .2s,opacity .2s}
+.rail-btn:hover:not(:disabled){background:var(--surface-2)}
+.rail-btn:disabled{opacity:.3;cursor:default}
+@media (min-width:561px){
+  .hrail{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:calc((100% - 4*18px)/4.4);gap:18px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding-bottom:14px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+  .hrail>*{scroll-snap-align:start}
+  .hrail:has(>.empty){display:block}
+  .hrail.expanded{grid-auto-flow:row;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-columns:auto;overflow:visible;scroll-snap-type:none;gap:30px 18px;padding-bottom:0}
+}
+@media (min-width:561px) and (max-width:900px){.hrail{grid-auto-columns:calc((100% - 3*18px)/3.4)}.hrail.expanded{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* 아이템 전체 보기 페이지 (#all) */
+#allPage,#showsPage,#peoplePage{padding-block:24px 48px}
+.all-head{display:grid;gap:6px;margin-bottom:18px}
+.back{justify-self:start;border:0;background:none;color:var(--muted);font-size:15px;padding:6px 0}
+.back:hover{color:var(--ink)}
+.all-head h1{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.25;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.all-head h1 small{font-family:var(--body);font-size:16px;font-weight:500;color:var(--muted)}
+.all-cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;scrollbar-width:none}
+.all-cats::-webkit-scrollbar{display:none}
+.all-cats .chip{flex:none;white-space:nowrap}
+.all-bar{display:flex;justify-content:space-between;align-items:center;gap:10px 16px;flex-wrap:wrap;margin-bottom:20px}
+.all-tags{display:flex;gap:8px;flex-wrap:wrap}
+.tagx{border:1px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:14px}
+.tagx span{color:var(--accent);margin-left:2px}
+.all-sort{display:flex;gap:4px;margin-left:auto}
+.all-sort button{border:0;background:none;color:var(--muted);font-size:14px;padding:6px 12px;border-radius:999px}
+.all-sort button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink);font-weight:700}
+.feed{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:1100px){.feed{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.feed{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.feed{grid-template-columns:1fr;gap:10px}}
+.fc{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:start;min-width:0}
+.fc-th{border:0;background:none;padding:0;display:block}
+.fc-th .th{aspect-ratio:1;border-radius:8px}
+.fc-info{display:grid;gap:3px;min-width:0}
+.fc-who{margin:0;font-size:12px;line-height:1.4;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-who .lnk{border:0;background:none;padding:0;font-size:12px;font-weight:700;color:var(--ink)}
+.fc-who .lnk:hover{text-decoration:underline}
+.fc-name{border:0;background:none;padding:0;text-align:left;display:grid;gap:1px;min-width:0}
+.fc-name .br{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-name .nm{font-size:14px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-name:hover .nm{text-decoration:underline}
+.fc-foot{display:flex;align-items:center;justify-content:space-between;gap:4px 8px;flex-wrap:wrap;margin-top:2px}
+.fc-foot .pr{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.fc-buy{background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:12px;border:0;border-radius:999px;padding:5px 10px;text-decoration:none;white-space:nowrap;transition:background .2s}
+.fc-buy:hover{background:var(--accent-hover)}
+.fc-buy.none{background:var(--surface-2);color:var(--ink)}
+/* 휴대폰: 새로 올라온 아이템도 한 줄로 옆으로 밀기 — 카드 폭은 최근 본 아이템과 같은 150px */
+@media (max-width:560px){
+  #itemGrid.hrail{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:150px;gap:18px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;padding-bottom:8px}
+  #itemGrid.hrail>*{scroll-snap-align:start}
+  #itemGrid.hrail:has(>.empty){display:block}
+  #itemGrid .item .th{margin-bottom:4px}
+  #itemGrid .item .who{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sh-side .more-all.in-head{height:auto;padding:6px 0;border:0;background:none;color:var(--muted);font-size:14px;font-weight:500}
+  .sh-side .more-all.in-head:hover{background:none;color:var(--ink)}
+}
+/* 전체 보기 페이지 '더보기': 목록 아래 가운데, 넓고 크게 */
+#allMore:not(:empty),#showsMore:not(:empty){display:flex;justify-content:center;margin-top:32px}
+#allMore .more-all,#showsMore .more-all{width:min(440px,100%);height:52px;padding:0 24px;font-size:16px;font-weight:700;background:var(--surface);border-color:var(--line)}
+#allMore .more-all:hover,#showsMore .more-all:hover{background:var(--surface-2)}
+/* 최근 업데이트: 한 줄로 옆으로 넘기기 (PC 3.3장, 태블릿 2.3장, 휴대폰 폭 220px) */
+#ups.srail{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:calc((100% - 2*22px)/3.3);gap:22px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding-bottom:14px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+#ups.srail>*{scroll-snap-align:start}
+#ups.srail:has(>.empty){display:block}
+@media (max-width:900px){#ups.srail{grid-auto-columns:calc((100% - 22px)/2.3)}}
+@media (max-width:560px){#ups.srail{grid-auto-columns:220px;gap:18px;padding-bottom:8px;scrollbar-width:auto;scrollbar-color:auto}}
+/* 포스터 위 회차·플랫폼 표시는 한 줄로 (길면 …) */
+.badge{right:12px}
+.badge i{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:none}
+.badge i.new{flex:0 1 auto}
+/* 전체 보기 페이지 안의 검색창 */
+.all-search{max-width:560px;margin-top:10px}
+#peoplePage .all-search input{padding-right:20px}
+/* 인물 전체 페이지: 작은 인물 칸 바둑판 (toftof /people 참고) */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.pc{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:14px 12px;display:grid;justify-items:center;gap:4px;text-align:center;min-width:0;transition:background .2s}
+.pc:hover{background:var(--surface-2)}
+.pc{align-content:start}
+.pc-name{font-size:15px;font-weight:700;line-height:1.35;max-width:100%;overflow-wrap:anywhere}
+.pc-sub{font-size:12px;color:var(--muted);line-height:1.35}
+.pc-show{font-size:12px;color:var(--muted);line-height:1.35;max-width:100%;overflow-wrap:anywhere}
+@media (max-width:560px){.pgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.pc{padding:12px 6px}.pc-name{font-size:14px}}
+#peoplePageMore:not(:empty){display:flex;justify-content:center;margin-top:32px}
+#peoplePageMore .more-all{width:min(440px,100%);height:52px;padding:0 24px;font-size:16px;font-weight:700;background:var(--surface);border-color:var(--line)}
+/* ③ 최근 업데이트 플랫폼 칩: 한 줄로 두고 넘치면 옆으로 밀기 */
+#platTabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+#platTabs::-webkit-scrollbar{display:none}
+#platTabs .chip{flex:none;white-space:nowrap}
+/* 메인 줄 맨 끝 '전체 보기' 칸 (사진 자리와 같은 크기) */
+.rail-end{align-self:start;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);display:grid;place-content:center;gap:6px;text-align:center;padding:12px;transition:background .2s}
+.rail-end:hover{background:var(--surface-2)}
+.rail-end b{font-size:16px}
+.rail-end small{font-size:13px;color:var(--muted)}
+.rail-end-items{aspect-ratio:4/5}
+.rail-end-shows{aspect-ratio:16/9}
+/* 최근 본 아이템 페이지 */
+#seenPage{padding-block:24px 48px}
+.seen-note{margin:0;color:var(--muted);font-size:14px}
+.seen-empty{display:grid;justify-items:start;gap:4px;padding:28px;grid-column:1/-1;max-width:none}
+.seen-empty p{margin:0}
+.seen-empty .primary{margin-top:12px}
+/* 프로그램 전체 페이지 */
+.sgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 18px}
+@media (max-width:1100px){.sgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.sgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}}
+@media (max-width:560px){.sgrid .poster{padding:10px}.sgrid .poster .t{font-size:16px}.sgrid .badge{top:8px;left:8px;right:8px}.sgrid .badge i{font-size:11px;padding:2px 6px}.sgrid .show .meta{font-size:13px}.sgrid .show .meta strong{font-size:14px}}
+@media (max-width:560px){
+  .all-head h1{font-size:24px}
+  .all-head h1 small{font-size:14px}
+  .all-sort button{font-size:13px;padding:6px 10px}
+}
+/* 인물·아이템 '전체 보기' 버튼 */
+.all-row:not(:empty){margin-top:24px}
+.more-all{padding:10px 22px;font-size:15px;font-weight:500}
+.more-all.in-head{height:40px;padding:0 18px;display:inline-flex;align-items:center} /* 제목 옆 ‹ › 와 같은 높이 */
+/* 휴대폰: 검색창 안내 문구가 끝까지 보이게 (입력 글씨는 17px 그대로라 아이폰에서 확대되지 않아요) */
+.search input:placeholder-shown::-webkit-search-cancel-button{display:none} /* 입력 전에는 지우기(×) 버튼 자리를 비우지 않아요 */
+@media (max-width:560px){
+  .search input{padding:15px 8px 15px 16px}
+  .search input::placeholder{font-size:16px}
+  .search button{padding:0 18px}
+}
+@media (max-width:381px){.search input::placeholder{font-size:15px}}
+@media (max-width:367px){.search input::placeholder{font-size:14px}}
+/* 첫 화면 미어캣: 6초 동안 천천히 커지며 올라갔다가 돌아와요 */
+@keyframes drift{from{transform:translate(-50%,-50%) scale(1)}to{transform:translate(-50%,-53.5%) scale(1.1)}}
+@keyframes driftm{from{transform:scale(1)}to{transform:scale(1.12) translateY(-2%)}}
+.hero-art img{animation:drift 6s ease-in-out infinite alternate}
+@media (max-width:759px){.hero-art img{animation-name:driftm}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -264,8 +435,9 @@ footer .logo{font-size:20px;color:var(--ink)}
   <div class="bar">
     <a class="logo" href="#top">어디꺼<b>야?</b></a>
     <nav>
-      <a href="#items">착장</a>
+      <a href="#items">아이템</a>
       <a href="#people" class="nav-hide">인물</a>
+      <a href="#seen" class="nav-seen">최근 본<span class="n" id="seenCount" hidden>0</span></a>
       <a href="#request" class="cta">제보</a>
       <a href="#admin" class="adm" id="admLink" hidden>관리<span class="n" id="repCount" hidden>0</span></a>
     </nav>
@@ -290,27 +462,31 @@ footer .logo{font-size:20px;color:var(--ink)}
     </div>
   </div>
 
-  <section style="border-top:0">
-    <div class="sh"><div><h2>최근 업데이트</h2><p id="upCount">착장이 새로 올라온 프로그램</p></div></div>
+  <section id="items" style="border-top:0">
+    <div class="sh"><div><h2 id="itemsTitle">새로 올라온 아이템</h2><p id="itemsSub"></p></div>
+      <div class="sh-side"><button class="more" id="resetFilter" hidden>필터 해제</button><span id="itemsMoreTop"></span><div class="rail-nav" data-rail="itemGrid" hidden><button type="button" class="rail-btn" data-dir="-1" aria-label="이전 아이템 보기">‹</button><button type="button" class="rail-btn" data-dir="1" aria-label="다음 아이템 보기">›</button></div></div></div>
+    <div class="items hrail" id="itemGrid"></div>
+    <div class="all-row" id="itemsMore"></div>
+  </section>
+
+  <section id="updates">
+    <div class="sh"><div><h2>최근 업데이트</h2><p id="upCount">아이템이 새로 올라온 프로그램</p></div>
+      <div class="sh-side"><span id="upsMoreTop"></span><div class="rail-nav" data-rail="ups" hidden><button type="button" class="rail-btn" data-dir="-1" aria-label="이전 프로그램 보기">‹</button><button type="button" class="rail-btn" data-dir="1" aria-label="다음 프로그램 보기">›</button></div></div></div>
     <div class="tabs" id="platTabs"></div>
-    <div class="ups" id="ups"></div>
+    <div class="ups srail" id="ups"></div>
   </section>
 
   <div class="recent" id="recent">
     <div class="sh"><div><h2>최근 본 아이템</h2><p>이 브라우저에서 열어본 아이템이 모여요</p></div>
-      <button class="more" id="clearRecent" hidden>전체 지우기</button></div>
+      <div class="sh-side"><button class="more" id="clearRecent" hidden>지우기</button><div class="rail-nav" data-rail="recentRail" hidden><button type="button" class="rail-btn" data-dir="-1" aria-label="이전 최근 본 아이템 보기">‹</button><button type="button" class="rail-btn" data-dir="1" aria-label="다음 최근 본 아이템 보기">›</button></div></div></div>
     <div id="recentList"></div>
   </div>
 
   <section id="people">
-    <div class="sh"><div><h2>인물로 찾기</h2><p>누가 입었는지 기억나면 바로</p></div></div>
+    <div class="sh"><div><h2>인물로 찾기</h2><p>누가 입었는지 기억나면 바로</p></div>
+      <div class="sh-side"><span id="peopleMoreTop"></span></div></div>
     <div class="people" id="peopleList"></div>
-  </section>
-
-  <section id="items">
-    <div class="sh"><div><h2 id="itemsTitle">새로 올라온 착장</h2><p id="itemsSub"></p></div>
-      <button class="more" id="resetFilter" hidden>필터 해제</button></div>
-    <div class="items" id="itemGrid"></div>
+    <div class="all-row" id="peopleMore"></div>
   </section>
 
 
@@ -318,7 +494,8 @@ footer .logo{font-size:20px;color:var(--ink)}
     <div class="req">
       <div>
         <h2>찾는 아이템이 없나요?</h2>
-        <p>프로그램, 회차, 인물, 장면을 알려주시면 확인해서 등록할게요. 보내주신 제보는 운영자만 볼 수 있어요.</p>
+        <p><span class="ln">프로그램, 회차, 인물, 장면을 알려주시면 확인해서 등록할게요.</span><span class="ln">보내주신 제보는 운영자만 볼 수 있어요.</span></p>
+        <div class="req-art"><img src="meerkat.webp" alt="쌍안경을 든 미어캣" loading="lazy"></div>
       </div>
       <form id="reqForm">
         <div class="row">
@@ -336,6 +513,76 @@ footer .logo{font-size:20px;color:var(--ink)}
       </form>
     </div>
   </section>
+</main>
+
+<main class="wrap" id="seenPage" hidden>
+  <div class="all-head">
+    <button type="button" class="back" id="seenBack">‹ 홈으로</button>
+    <h1 id="seenTitle">최근 본 아이템</h1>
+    <p class="seen-note">열어본 아이템이 최근 순서로 30개까지 모여요. 이 브라우저에만 저장돼서 다른 기기에서는 보이지 않아요.</p>
+  </div>
+  <div class="all-bar"><div></div><button type="button" class="more" id="seenClear" hidden>모두 지우기</button></div>
+  <div class="feed" id="seenList"></div>
+</main>
+
+<main class="wrap" id="peoplePage" hidden>
+  <div class="all-head">
+    <button type="button" class="back" id="peopleBack">‹ 홈으로</button>
+    <h1 id="peopleTitle">인물 전체</h1>
+    <form class="search all-search" role="search" onsubmit="return false">
+      <input id="peopleQ" type="search" placeholder="인물 이름으로 찾기" aria-label="인물 이름으로 찾기" autocomplete="off">
+    </form>
+  </div>
+  <div class="all-bar">
+    <div></div>
+    <div class="all-sort" id="peopleSort" role="group" aria-label="정렬">
+      <button type="button" data-psort="count" aria-pressed="true">아이템 많은순</button>
+      <button type="button" data-psort="recent" aria-pressed="false">최근 등록순</button>
+      <button type="button" data-psort="name" aria-pressed="false">이름순</button>
+    </div>
+  </div>
+  <div class="pgrid" id="peoplePageList"></div>
+  <div class="all-row" id="peoplePageMore"></div>
+</main>
+
+<main class="wrap" id="showsPage" hidden>
+  <div class="all-head">
+    <button type="button" class="back" id="showsBack">‹ 홈으로</button>
+    <h1 id="showsTitle">프로그램 전체</h1>
+  </div>
+  <div class="all-cats" id="showsPlats" aria-label="플랫폼"></div>
+  <div class="all-bar">
+    <div></div>
+    <div class="all-sort" id="showsSort" role="group" aria-label="정렬">
+      <button type="button" data-ssort="recent" aria-pressed="true">최근 업데이트순</button>
+      <button type="button" data-ssort="items" aria-pressed="false">아이템 많은순</button>
+      <button type="button" data-ssort="name" aria-pressed="false">이름순</button>
+    </div>
+  </div>
+  <div class="sgrid" id="showsList"></div>
+  <div class="all-row" id="showsMore"></div>
+</main>
+
+<main class="wrap" id="allPage" hidden>
+  <div class="all-head">
+    <button type="button" class="back" id="allBack">‹ 홈으로</button>
+    <h1 id="allTitle">아이템 전체</h1>
+    <form class="search all-search" id="allSearch" role="search">
+      <input id="allQ" type="search" placeholder="인물, 프로그램, 브랜드, 아이템 검색" aria-label="검색어">
+      <button type="submit">검색</button>
+    </form>
+  </div>
+  <div class="all-cats" id="allCats" aria-label="종류"></div>
+  <div class="all-bar">
+    <div class="all-tags" id="allTags"></div>
+    <div class="all-sort" id="allSort" role="group" aria-label="정렬">
+      <button type="button" data-sort="new" aria-pressed="true">최신순</button>
+      <button type="button" data-sort="low" aria-pressed="false">낮은 가격순</button>
+      <button type="button" data-sort="high" aria-pressed="false">높은 가격순</button>
+    </div>
+  </div>
+  <div class="feed" id="allList"></div>
+  <div class="all-row" id="allMore"></div>
 </main>
 
 <main class="wrap" id="admin" hidden>
@@ -400,9 +647,9 @@ footer .logo{font-size:20px;color:var(--ink)}
         <p class="note" id="iPersonNote">목록에서 고르거나 새 이름을 쓰면 인물로 추가돼요.</p>
         <label for="iEp">회차 (제목)<input id="iEp" maxlength="100" placeholder="예: 12화 또는 유튜브 영상 제목"></label>
         <label for="iVerify">확인 상태 *<select id="iVerify" required>
-          <option value="official">정품 확인 — 같은 제품이 확실해요</option>
-          <option value="similar">유사품 — 비슷한 제품을 찾았어요</option>
-          <option value="guess" selected>추정 — 확인 중이에요</option>
+          <option value="official">동일 제품 — 방송에 나온 것과 같은 제품이 확실해요</option>
+          <option value="similar">비슷한 제품 — 비슷한 제품을 찾았어요</option>
+          <option value="guess" selected>확인 중 — 아직 확인하고 있어요</option>
         </select></label>
         <label for="iScene">장면 설명<textarea id="iScene" maxlength="600" placeholder="어느 장면에서 어떻게 입었는지"></textarea></label>
         <label class="laff" style="font-weight:500"><input type="checkbox" id="iAff"> 대표 링크가 제휴 링크예요</label>
@@ -460,6 +707,7 @@ footer .logo{font-size:20px;color:var(--ink)}
   <span>아이템 정보는 방송 화면을 보고 찾은 것이라 틀릴 수 있어요. </span>
   <span>구매 링크 중 일부는 제휴 링크일 수 있으며, 이 링크로 구매하면 어디꺼야?가 일정 수수료를 받을 수 있어요.</span>
   <span>정보 수정·삭제 요청과 문의: <a href="mailto:zpvlfntm1@naver.com">zpvlfntm1@naver.com</a></span>
+  <span class="foot-links"><a href="people/">인물별 아이템</a> · <a href="shows/">프로그램별 아이템</a> · <a href="category/">분류별 아이템</a></span>
   <span>어디꺼야?는 상품 판매의 당사자가 아니에요. · <a href="#admin">관리자</a></span>
 </footer>
 
