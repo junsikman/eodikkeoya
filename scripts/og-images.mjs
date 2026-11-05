@@ -8,6 +8,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
+// 깃허브에서 돌 때는 문제를 공개 경고(::warning::)로 남겨 배포 화면에서 바로 보이게 해요
+const warn = m => console.log((process.env.GITHUB_ACTIONS ? "::warning::" : "") + m);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const CSS = `*{box-sizing:border-box;margin:0}
@@ -90,9 +92,9 @@ export async function renderOg(jobs) {
   const ok = new Set();
   const bin = CHROMES.find(p => p && existsSync(p));
   if (!jobs.length) return ok;
-  if (!bin) { console.log("크롬을 찾지 못해 공유 이미지를 만들지 않았어요."); return ok; }
+  if (!bin) { warn("크롬을 찾지 못해 공유 이미지를 만들지 않았어요."); return ok; }
   const dir = await mkdtemp(join(tmpdir(), "og-"));
-  const proc = spawn(bin, ["--headless=new", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--no-first-run",
+  const proc = spawn(bin, ["--headless=new", "--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage", "--hide-scrollbars", "--no-first-run",
     "--remote-debugging-port=0", `--user-data-dir=${dir}`, "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
   let ws;
   try {
@@ -133,14 +135,14 @@ export async function renderOg(jobs) {
             document.fonts.ready.then(()=>Promise.all([...document.images].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r})))).then(()=>[...document.images].every(i=>i.naturalWidth>0)),
             new Promise(r=>setTimeout(()=>r(false),15000))])`,
         }, sessionId);
-        if (!result.value) { console.log(`공유 이미지: 사진을 못 불러와 건너뛰어요 (${job.file})`); continue; }
+        if (!result.value) { warn(`공유 이미지: 사진을 못 불러와 건너뛰어요 (${job.file})`); continue; }
         const { data } = await send("Page.captureScreenshot", { format: "jpeg", quality: 88, clip: { x: 0, y: 0, width: 1200, height: 630, scale: 1 } }, sessionId);
         await writeFile(job.file, Buffer.from(data, "base64"));
         ok.add(job.file);
-      } catch (e) { console.log(`공유 이미지 실패 (${job.file}): ${e.message}`); }
+      } catch (e) { warn(`공유 이미지 실패 (${job.file}): ${e.message}`); }
     }
   } catch (e) {
-    console.log("공유 이미지를 만들지 못했어요:", e.message);
+    warn(`공유 이미지를 만들지 못했어요 (${bin}): ${e.message}`);
   } finally {
     try { ws?.close(); } catch {}
     proc.kill();
