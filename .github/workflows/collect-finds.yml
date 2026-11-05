@@ -2,11 +2,16 @@ name: 착장 정보 자동 수집
 
 on:
   schedule:
-    - cron: "7 20 * * *" # 매일 한국 시간 새벽 5시 7분
+    - cron: "7 20,4,12 * * *" # 하루 세 번: 한국 시간 새벽 5시 7분, 오후 1시 7분, 밤 9시 7분 (공개 저장소라 무료)
   workflow_dispatch: # Actions 화면에서 직접 실행할 수도 있어요
 
 permissions:
   contents: read
+
+# 앞 수집이 아직 돌고 있으면 끝날 때까지 기다렸다 시작해요 (같은 글을 두 번 읽지 않게)
+concurrency:
+  group: collect-finds
+  cancel-in-progress: false
 
 jobs:
   collect:

@@ -265,6 +265,7 @@ docs = docs.slice(0, MAX_DOCS);
 console.log(`새로 읽을 글 ${docs.length}개`);
 
 let added = 0, read = 0;
+const drops = new Map(); // 버린 이유별 개수 (결과 요약에 써요)
 for (const doc of docs) {
   const text = await readText(doc);
   // 협찬·제휴 문구가 있어도 버리지 않아요 (쿠팡 파트너스 같은 제휴 수익 표시일 수 있어요).
@@ -277,7 +278,7 @@ for (const doc of docs) {
   const rows = [];
   for (const raw of cands) {
     const why = check(raw || {}, `${doc.title} ${text}`, doc);
-    if (why) { if (raw?.brand) console.log(`  버림(${why}): ${raw.person || "?"} · ${raw.brand} ${raw.name}`); continue; }
+    if (why) { if (raw?.brand) { console.log(`  버림(${why}): ${raw.person || "?"} · ${raw.brand} ${raw.name}`); drops.set(why, (drops.get(why) || 0) + 1); } continue; }
     const c = { ...raw, brand: cut(raw.brand, 60), name: cut(raw.name, 120) };
     if (rows.some(r => r.who === cut(c.person, 40) && norm(r.brand) === norm(c.brand))) continue; // 같은 사람·같은 브랜드는 하나만
     if (known.has(norm(c.brand) + "|" + norm(c.name))) { console.log(`  이미 등록된 아이템: ${c.brand} ${c.name}`); continue; }
@@ -315,4 +316,9 @@ for (const doc of docs) {
   await sleep(1500); // 글이 있는 사이트에 부담을 주지 않도록 천천히
 }
 
+// 깃허브에서 돌 때는 결과를 요약으로 남겨 Actions 화면 맨 위에서 바로 보이게 해요
+if (process.env.GITHUB_ACTIONS) {
+  const top = [...drops].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([w, c]) => `${w} ${c}`).join(", ");
+  console.log(`::notice title=자동 수집 결과::새 글 ${docs.length}개 중 ${read}개를 읽고 후보 ${added}개를 제보함에 넣었어요.${top ? ` 많이 버린 이유: ${top}` : ""}`);
+}
 console.log(`끝: 글 ${read}개를 읽고 후보 ${added}개를 제보함에 ${DRY ? "넣을 예정이에요 (시험 실행이라 저장 안 함)" : "넣었어요"}`);
