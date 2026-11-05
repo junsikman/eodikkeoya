@@ -6,6 +6,7 @@
 // 깃허브 자동 작업(.github/workflows/deploy.yml)이 실행해요.
 // 미리보기에서 돌릴 때만 SRC(사이트 파일 폴더)·OUT(결과 폴더)·SITE_URL을 바꿔요.
 import { mkdir, writeFile, copyFile, readFile } from "node:fs/promises";
+import { itemCard, groupCard, renderOg } from "./og-images.mjs";
 
 const BASE = (process.env.SITE_URL || "https://wherefrom.store").replace(/\/+$/, "");
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
@@ -139,7 +140,9 @@ const FOOT = `<footer class="wrap">
   <span>정보 수정·삭제 요청과 문의: <a href="mailto:zpvlfntm1@naver.com">zpvlfntm1@naver.com</a></span>
 </footer>`;
 
-function page({ title, desc, url, image, ogType = "website", ld, body, mainClass = "" }) {
+// 공유 이미지(og.jpg)를 만들 페이지 목록 — 다 만든 뒤 한꺼번에 찍어요
+const ogJobs = [];
+function page({ title, desc, url, image, og = false, ogType = "website", ld, body, mainClass = "" }) {
   return `<!doctype html>
 <html lang="ko">
 <head>
@@ -155,7 +158,8 @@ function page({ title, desc, url, image, ogType = "website", ld, body, mainClass
 <meta property="og:site_name" content="어디꺼야?">
 <meta property="og:title" content="${esc(title.replace(/ \| 어디꺼야\?$/, ""))}">
 <meta property="og:description" content="${esc(desc)}">
-<meta property="og:image" content="${esc(image || `${BASE}/og-default.jpg`)}">
+<meta property="og:image" content="${esc(og ? url + "og.jpg" : image || `${BASE}/og-default.jpg`)}">${og ? `
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}
 <meta property="og:url" content="${url}">
 <meta name="twitter:card" content="summary_large_image">
 ${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>` : ""}
@@ -213,7 +217,15 @@ function itemPage(it, others) {
     <p style="margin-top:20px"><a class="btn" href="${BASE}/">어디꺼야?에서 다른 아이템 보기</a></p>
   </div>
   ${others.length ? `<section class="more"><h2><a href="${personUrl(it.person)}">${esc(it.person)}의 다른 아이템</a></h2><div class="grid">${others.map(o => `<a href="${itemUrl(o)}"><div class="t">${httpUrl(o.image_url) ? `<img src="${esc(o.image_url)}" alt="" loading="lazy">` : ""}</div><b>${esc(o.brand)}</b><span>${esc(o.name)}</span></a>`).join("")}</div></section>` : ""}`;
-  return page({ title, desc, url, image: httpUrl(it.image_url) ? it.image_url : "", ogType: "product", ld, body });
+  const og = httpUrl(it.image_url);
+  if (og) {
+    const low = priced.find(l => l.price === min);
+    ogJobs.push({ dir: `item/${short(it.id)}`, fallback: it.image_url, html: itemCard({
+      image: it.image_url, where: [scene, it.person].filter(Boolean).join(" · "), brand: it.brand, name: it.name,
+      price: mainIsLowest ? won(it.price) : min !== null ? `최저 ${won(min)}` : "",
+      shop: [mainIsLowest ? shopName(it.buy_url) : low ? low.shop : ""].find(x => x && x !== "구매처") || "" }) });
+  }
+  return page({ title, desc, url, image: og ? it.image_url : "", og, ogType: "product", ld, body });
 }
 
 const seen = new Set();
@@ -262,7 +274,9 @@ for (const [k, { name, list }] of byPerson) {
   <p class="lead">${esc(desc)}</p>
   ${showCnt.size ? `<p class="label">출연 프로그램</p><div class="chips">${top(showCnt, 50).map(([id, n]) => { const s = showOf(id); return `<a href="${showUrl(s)}">${esc(s.title)}<small>${n}</small></a>`; }).join("")}</div>` : ""}
   <div class="cards">${list.map(card).join("")}</div>`;
-  await save(`people/${k}`, page({ title, desc, url, image: firstImage(list), ld: listLd(`${name}의 아이템`, url, list), body, mainClass: "list" }));
+  const pImgs = list.map(it => it.image_url).filter(httpUrl);
+  if (pImgs.length) ogJobs.push({ dir: `people/${k}`, fallback: pImgs[0], html: groupCard({ kind: "인물", title: name, count: list.length, sub: showNames.join(" · "), images: pImgs }) });
+  await save(`people/${k}`, page({ title, desc, url, image: firstImage(list), og: pImgs.length > 0, ld: listLd(`${name}의 아이템`, url, list), body, mainClass: "list" }));
   sitemap.push([url, day(latest(list))]);
 }
 
@@ -283,7 +297,9 @@ for (const s of shows) {
   <p class="lead">${esc(desc)}</p>
   ${ppl.size ? `<p class="label">출연자</p><div class="chips">${top(ppl, 50).map(([n, c]) => `<a href="${personUrl(n)}">${esc(n)}<small>${c}</small></a>`).join("")}</div>` : ""}
   <div class="cards">${list.map(card).join("")}</div>`;
-  await save(`shows/${showSlug.get(s.id)}`, page({ title, desc, url, image: httpUrl(s.poster_url) ? s.poster_url : firstImage(list), ld: listLd(`${s.title} 아이템`, url, list), body, mainClass: "list" }));
+  const sImgs = list.map(it => it.image_url).filter(httpUrl);
+  if (sImgs.length) ogJobs.push({ dir: `shows/${showSlug.get(s.id)}`, fallback: httpUrl(s.poster_url) ? s.poster_url : sImgs[0], html: groupCard({ kind: "프로그램", title: s.title, count: list.length, sub: names.join(" · "), images: sImgs }) });
+  await save(`shows/${showSlug.get(s.id)}`, page({ title, desc, url, image: httpUrl(s.poster_url) ? s.poster_url : firstImage(list), og: sImgs.length > 0, ld: listLd(`${s.title} 아이템`, url, list), body, mainClass: "list" }));
   sitemap.push([url, day(latest(list))]);
 }
 
@@ -326,6 +342,18 @@ await hubPage("shows", "프로그램별 아이템", "프로그램별 방송 아�
 await hubPage("category", "분류별 아이템", "분류별 방송 아이템 모음 - 패션·뷰티·식품·인테리어 어디꺼? | 어디꺼야?",
   `상의, 아우터, 가방, 모자 같은 패션부터 뷰티·화장품, 식품·음식, 인테리어까지 방송에 나온 아이템을 분류별로 모았어요.`,
   Object.entries(CATS).filter(([k]) => byCat.has(k)).map(([k, v]) => `<a href="${catUrl(k)}"><b>${esc(v)}</b><span>아이템 ${byCat.get(k).length}개</span></a>`), all);
+
+// ---- 공유 이미지 찍기: 못 만든 페이지는 예전처럼 상품 사진으로 되돌려요 ----
+{
+  const made = await renderOg(ogJobs.map(j => ({ html: j.html, file: `${OUT}/${j.dir}/og.jpg` })));
+  for (const j of ogJobs) {
+    if (made.has(`${OUT}/${j.dir}/og.jpg`)) continue;
+    const f = `${OUT}/${j.dir}/index.html`;
+    const html = (await readFile(f, "utf8")).replace(/<meta property="og:image" content="[^"]*">\r?\n<meta property="og:image:width"[^\r\n]*/,`<meta property="og:image" content="${esc(j.fallback)}">`);
+    await writeFile(f, html);
+  }
+  console.log(`공유 이미지 ${made.size}/${ogJobs.length}개를 만들었어요.`);
+}
 
 // ---- 6) 사이트맵 ----
 const urls = [`<url><loc>${BASE}/</loc></url>`,
