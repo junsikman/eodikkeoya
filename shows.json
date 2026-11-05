@@ -13,7 +13,7 @@
   "title": "나혼자산다",
   "platform": "MBC",
   "ep": "664",
-  "poster_url": "",
+  "poster_url": "https://zsguwckfbnglcwubmsor.supabase.co/storage/v1/object/public/images/mw39jc1d-j6g3bc.webp",
   "created_at": "2026-10-29T15:11:00.278091+00:00",
   "updated_at": "2026-11-02T09:29:42.633+00:00"
  },
@@ -22,8 +22,26 @@
   "title": "순풍선우용여",
   "platform": "YouTube",
   "ep": "부자동네 '동부이촌동'사는 82세 선우용여의 동네 단골",
-  "poster_url": "",
+  "poster_url": "https://zsguwckfbnglcwubmsor.supabase.co/storage/v1/object/public/images/mw39hcgu-n7fkk5.webp",
   "created_at": "2026-11-02T10:15:02.156752+00:00",
   "updated_at": "2026-11-02T10:15:02.156752+00:00"
+ },
+ {
+  "id": "af400e41-8486-492d-819c-fb0d8ae396c1",
+  "title": "나는솔로",
+  "platform": "Netflix",
+  "ep": "34기",
+  "poster_url": "https://zsguwckfbnglcwubmsor.supabase.co/storage/v1/object/public/images/mw39f74j-ulxss6.avif",
+  "created_at": "2026-11-05T07:46:10.177509+00:00",
+  "updated_at": "2026-11-05T07:46:10.177509+00:00"
+ },
+ {
+  "id": "dec303bd-a148-45fd-95cd-fd1c12bd636c",
+  "title": "나의 유죄인간",
+  "platform": "tvN",
+  "ep": "1화",
+  "poster_url": "https://zsguwckfbnglcwubmsor.supabase.co/storage/v1/object/public/images/mw39b325-km65jl.webp",
+  "created_at": "2026-11-05T07:59:13.865499+00:00",
+  "updated_at": "2026-11-05T07:59:13.865499+00:00"
  }
 ]
