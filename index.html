@@ -645,13 +645,13 @@ footer .logo{font-size:20px;color:var(--ink)}
           <label for="iPrice">가격 (원)<input id="iPrice" type="number" min="0" step="1" placeholder="모르면 비워두기"></label>
         </div>
         <div class="row">
-          <label for="iShow">프로그램 *<input id="iShow" required maxlength="80" list="showOptions" placeholder="입력하거나 목록에서 고르기"></label>
+          <label for="iShow">프로그램<input id="iShow" maxlength="80" list="showOptions" placeholder="없으면 비워 두기 (행사·화보·SNS)"></label>
           <label for="iPlat">플랫폼<select id="iPlat"></select></label>
         </div>
         <p class="note" id="iShowNote">처음 입력하는 프로그램은 저장할 때 자동으로 추가돼요.</p>
         <label for="iPerson">인물 *<input id="iPerson" required maxlength="40" list="personList" placeholder="목록에서 고르거나 새 이름 입력"></label>
         <p class="note" id="iPersonNote">목록에서 고르거나 새 이름을 쓰면 인물로 추가돼요.</p>
-        <label for="iEp">회차 (제목)<input id="iEp" maxlength="100" placeholder="예: 12화 또는 유튜브 영상 제목"></label>
+        <label for="iEp">회차 · 상황<input id="iEp" maxlength="100" placeholder="예: 12화, 유튜브 영상 제목, 듀베티카 브랜드 행사"></label>
         <label for="iVerify">확인 상태 *<select id="iVerify" required>
           <option value="official">동일 제품 — 방송에 나온 것과 같은 제품이 확실해요</option>
           <option value="similar">비슷한 제품 — 비슷한 제품을 찾았어요</option>

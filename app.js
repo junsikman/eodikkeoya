@@ -104,7 +104,8 @@ function moreBtn(box,kind,open,total,unit){
   $(box).innerHTML=total>firstN()?`<button class="ghost more-all" data-all="${kind}" aria-expanded="${open}">${open?"접기":`전체 보기 (${total.toLocaleString()}${unit})`}</button>`:"";
 }
 phoneMQ.addEventListener("change",()=>{renderPeople();renderItems();renderRecent();renderUps()});
-const showOf=id=>S.shows.find(s=>s.id===id)||{title:"알 수 없는 프로그램",platform:"",color:"#8A7A70"};
+/* 프로그램이 없는 아이템(브랜드 행사·화보·SNS 등)은 제목이 빈 글자예요 */
+const showOf=id=>id?(S.shows.find(s=>s.id===id)||{title:"알 수 없는 프로그램",platform:"",color:"#8A7A70"}):{title:"",platform:"",color:"#8A7A70"};
 const byNew=(a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||""));
 
 function thumb(it,cls=""){
@@ -135,7 +136,7 @@ function renderCats(){
 function itemCard(it){
   return `<button class="item" data-id="${esc(it.id)}">${thumb(it)}
    <span class="br">${esc(it.brand)}${sampleTag(it)} ${vfTag(it)}</span><span class="nm">${esc(it.name)}</span><span class="pr">${topPriceHtml(it)}</span>
-   <span class="who">${esc(it.person)} · ${esc(showOf(it.showId).title)}</span></button>`;
+   <span class="who">${esc([it.person,showOf(it.showId).title].filter(Boolean).join(" · "))}</span></button>`;
 }
 /* 옆으로 넘기는 줄(PC·태블릿): 넘칠 때만 화살표를 보이고, 끝에 닿으면 그쪽 화살표를 흐리게 */
 function railNav(id){
@@ -238,7 +239,7 @@ function feedCard(it){
   return `<article class="fc">
    <button type="button" class="fc-th" data-id="${esc(it.id)}" aria-label="${esc(it.brand+" "+it.name)} 자세히 보기">${thumb(it)}</button>
    <div class="fc-info">
-    <p class="fc-who"><button type="button" class="lnk" data-allperson="${esc(it.person)}">${esc(it.person)}</button> · ${esc(s.title)}${it.ep?" "+esc(it.ep):""}</p>
+    <p class="fc-who"><button type="button" class="lnk" data-allperson="${esc(it.person)}">${esc(it.person)}</button>${s.title||it.ep?" · "+esc([s.title,it.ep].filter(Boolean).join(" ")):""}</p>
     <button type="button" class="fc-name" data-id="${esc(it.id)}"><span class="br">${esc(it.brand)}${sampleTag(it)} ${vfTag(it)}</span><span class="nm">${esc(it.name)}</span></button>
     <div class="fc-foot"><span class="pr">${topPriceHtml(it)}</span>${m?`<a class="fc-buy" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer${m.aff?" sponsored":""}" data-item="${esc(it.id)}">${esc(m.shop)}에서 보기</a>`
      :`<button type="button" class="fc-buy none" data-id="${esc(it.id)}">자세히</button>`}</div>
@@ -341,7 +342,7 @@ function openItem(id,fromHash){
    <button class="x" id="close" aria-label="닫기">×</button>${thumb(it)}
    <button class="share" id="shareItem" data-share="${esc(it.id)}">링크 공유</button>
    <div class="bd"><span class="br">${esc(it.brand)}${sampleTag(it)}</span><h3>${esc(it.name)}</h3><span class="pr">${topPriceHtml(it)}</span>${hasNum(it.couponPrice)?`<span class="note">${esc(shopName(it.buyUrl))} 쿠폰 적용 시 최대 ${won(it.couponPrice)}</span>`:""}<span class="note">${priceNote(it)}</span>
-   <dl><dt>확인</dt><dd>${vfTag(it)}</dd><dt>인물</dt><dd>${esc(it.person)}</dd><dt>프로그램</dt><dd>${esc(s.title)}${sceneText(it)?" · "+esc(sceneText(it)):""}</dd>
+   <dl><dt>확인</dt><dd>${vfTag(it)}</dd><dt>인물</dt><dd>${esc(it.person)}</dd>${s.title?`<dt>프로그램</dt><dd>${esc(s.title)}${sceneText(it)?" · "+esc(sceneText(it)):""}</dd>`:sceneText(it)?`<dt>어디서</dt><dd>${esc(sceneText(it))}</dd>`:""}
    ${s.platform?`<dt>플랫폼</dt><dd>${esc(s.platform)}</dd>`:""}<dt>분류</dt><dd>${CATS[it.cat]||""}</dd></dl>
    ${it.scene?`<p class="scene">${esc(it.scene)}</p>`:""}
    ${(()=>{const ls=buyLinks(it);if(!ls.length)return `<p class="note">구매처 정보가 아직 없어요.</p>`;
@@ -410,7 +411,7 @@ function renderShowSelect(){
 function syncShowNote(){
   const t=$("#iShow").value.trim(),s=t&&findShow(t);
   if(s){$("#iPlat").value=PLATS.includes(s.platform)?s.platform:"기타";$("#iPlat").disabled=true;$("#iShowNote").textContent="등록된 프로그램이에요."}
-  else{$("#iPlat").disabled=false;$("#iShowNote").textContent=t?"새 프로그램이에요. 플랫폼을 고르면 저장할 때 함께 추가돼요.":"처음 입력하는 프로그램은 저장할 때 자동으로 추가돼요."}
+  else{$("#iPlat").disabled=!t;$("#iShowNote").textContent=t?"새 프로그램이에요. 플랫폼을 고르면 저장할 때 함께 추가돼요.":"프로그램이 없는 아이템(브랜드 행사·화보·SNS 등)은 비워 두세요. 어디서 입었는지는 아래 '회차 · 상황' 칸에 쓰면 돼요."}
 }
 $("#iShow").addEventListener("input",syncShowNote);
 const findPerson=n=>S.people.find(p=>norm(p.name)===norm(n));
@@ -483,7 +484,7 @@ function renderAdmin(){
   const ilist=[...S.items].sort(byNew).filter(it=>!lq||norm([it.brand,it.name,it.person,showOf(it.showId).title,it.ep].join(" ")).includes(lq));
   $("#iListCount").textContent=S.items.length?(lq?`찾은 아이템 ${ilist.length}개 / 전체 ${S.items.length}개`:`등록한 아이템 ${S.items.length}개`):"";
   $("#iList").innerHTML=!S.items.length?`<p class="empty">등록된 아이템이 없어요. 왼쪽에서 첫 아이템을 등록해 보세요.</p>`:!ilist.length?`<p class="empty">찾는 아이템이 없어요.</p>`:ilist.map(it=>`<div class="arow">${thumb(it)}
-    <div style="min-width:0"><b>${esc(it.brand)} · ${esc(it.name)}</b><span>${esc(it.person)} · ${esc(showOf(it.showId).title)} ${esc(it.ep||"")} · ${won(it.price)}${it.priceCheckFailed?" · <em class=\"warn\">가격 확인 실패</em>":it.priceCheckedAt?" · "+md(it.priceCheckedAt)+" 확인":""}</span></div>
+    <div style="min-width:0"><b>${esc(it.brand)} · ${esc(it.name)}</b><span>${esc([it.person,[showOf(it.showId).title,it.ep].filter(Boolean).join(" ")||"프로그램 없음"].join(" · "))} · ${won(it.price)}${it.priceCheckFailed?" · <em class=\"warn\">가격 확인 실패</em>":it.priceCheckedAt?" · "+md(it.priceCheckedAt)+" 확인":""}</span></div>
     <div class="btns"><button class="ghost" data-copyurl="${esc(it.id)}">주소 복사</button><button class="ghost" data-edit="item:${esc(it.id)}">수정</button>${delBtn("item",it.id)}</div></div>`).join("");
   $("#sList").innerHTML=S.shows.length?[...S.shows].sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).map(s=>`<div class="arow">
     <div class="pv" style="background:${colorOf(s)}">${okUrl(s.posterUrl)?`<img src="${esc(s.posterUrl)}" alt="">`:""}</div>
@@ -555,20 +556,20 @@ $("#iForm").addEventListener("submit",async e=>{
     const now=new Date().toISOString();
     const prev=editI?S.items.find(i=>i.id===editI)||{}:{};
     const title=$("#iShow").value.trim(),ep=$("#iEp").value.trim();
-    let show=findShow(title),made=false;
-    if(!show){
+    let show=title?findShow(title):null,made=false;
+    if(title&&!show){
       const r=must(await sb.from("shows").insert({title,platform:$("#iPlat").value,ep}).select().single());
       show={id:r.data.id};made=true;
     }
     const person=await ensurePerson($("#iPerson").value.trim());
     const doc={brand:$("#iBrand").value.trim(),name:$("#iName").value.trim(),cat:$("#iCat").value,price,
       person:person.name,person_id:person.id,verify:$("#iVerify").value,
-      show_id:show.id,ep,scene:$("#iScene").value.trim(),
+      show_id:show?show.id:null,ep,scene:$("#iScene").value.trim(),
       buy_url:$("#iUrl").value.trim(),buy_affiliate:$("#iAff").checked,links:readLinks(),
       image_url:up||fetchedImg||(iImg===false?"":(prev.imageUrl||"")),updated_at:now};
     if(fetchedList)doc.list_price=fetchedList;
     if(editI)must(await sb.from("items").update(doc).eq("id",editI));else must(await sb.from("items").insert(doc));
-    if(!made&&!editI)must(await sb.from("shows").update({updated_at:now,...(ep?{ep}:{})}).eq("id",show.id));
+    if(show&&!made&&!editI)must(await sb.from("shows").update({updated_at:now,...(ep?{ep}:{})}).eq("id",show.id));
     const wasEdit=!!editI,rep=fromReport;
     let repDone=false;
     if(rep&&!wasEdit){try{must(await sb.from("reports").delete().eq("id",rep));repDone=true}catch(e){console.error(e)}}

@@ -207,7 +207,7 @@ function itemPage(it, others) {
     <p class="note">${it.price_checked_at ? `${md(it.price_checked_at)} 판매처 기준 · 가격은 바뀔 수 있어요` : "등록할 때 가격이에요. 판매처에서 확인해 주세요"}</p>
     <dl>
       <dt>인물</dt><dd>${it.person ? `<a href="${personUrl(it.person)}">${esc(it.person)}</a>` : ""}</dd>
-      ${scene ? `<dt>프로그램</dt><dd>${sUrl ? `<a href="${sUrl}">${esc(s.title)}</a>${it.ep ? " " + esc(it.ep) : ""}` : esc(scene)}</dd>` : ""}
+      ${scene ? `<dt>${s.title ? "프로그램" : "어디서"}</dt><dd>${sUrl ? `<a href="${sUrl}">${esc(s.title)}</a>${it.ep ? " " + esc(it.ep) : ""}` : esc(scene)}</dd>` : ""}
       ${s.platform ? `<dt>플랫폼</dt><dd>${esc(s.platform)}</dd>` : ""}
       <dt>분류</dt><dd>${CATS[it.cat] ? `<a href="${catUrl(it.cat)}">${esc(CATS[it.cat])}</a>` : ""}</dd>
     </dl>
