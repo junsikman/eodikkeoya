@@ -520,7 +520,7 @@ function postFor(it){
     `<p><br></p><h3>🔎 제품 정보</h3>`,
     `<p><b>브랜드</b> ${esc(it.brand)}<br><b>상품명</b> ${esc(it.name)}<br><b>가격</b> ${esc(priceTxt)}</p>`,
     links.length?`<p><b>구매처</b><br>${links.map(l=>`<a href="${esc(l.url)}">${esc(l.shop)}${hasNum(l.price)?" "+won(l.price):""}</a>`).join("<br>")}</p>`:"",
-    okUrl(it.imageUrl)?`<p><br></p><p style="text-align:center"><img src="${esc(page)}og.jpg" alt="${esc(it.brand+" "+it.name)}"></p>`:"",
+    okUrl(it.imageUrl)?`<p><br></p><p style="text-align:center"><a href="${esc(page)}"><img src="${esc(page)}og.jpg" alt="${esc(it.brand+" "+it.name)}"></a></p><p style="text-align:center"><a href="${esc(page)}"><span style="color:#888888;font-size:13px">사진을 누르면 어디꺼야?에서 볼 수 있어요</span></a></p>`:"",
     `<p><br></p><p>👉 <a href="${esc(page)}"><b>어디꺼야?에서 자세히 보기</b></a></p>`,
     `<p>방송에 나온 다른 아이템도 <a href="${SITE}/">wherefrom.store</a>에서 찾아보세요.</p>`,
     aff?`<p><br></p>`+gray(AFF):""
