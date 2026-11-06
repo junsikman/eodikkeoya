@@ -185,7 +185,7 @@ ${GC_TAG}
 function itemPage(it, others) {
   const s = showOf(it.show_id);
   const url = itemUrl(it);
-  const scene = [s.title, it.ep].filter(Boolean).join(" ");
+  const scene = [s.title || it.platform, it.ep].filter(Boolean).join(" "); // 프로그램이 없으면 아이템의 플랫폼(행사·포토콜 등)
   const { links, priced, min, mainIsLowest, off } = buyInfo(it);
   // 사람들이 실제로 치는 말: "프로그램 인물 분류" (예: 언니네 산지직송3 염정아 모자)
   const cat = CATS[it.cat] || "";

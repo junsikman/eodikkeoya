@@ -69,7 +69,7 @@ if(GOATCOUNTER&&location.hash!=="#admin"){
 }
 const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:"pkce",detectSessionInUrl:true,persistSession:true}}):null;
 const S={items:[],shows:[],reports:[],people:[],itemsOk:false,showsOk:false,owner:false,noDb:false};
-const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,personId:r.person_id,verify:r.verify||"guess",sceneTime:r.scene_time||"",links:Array.isArray(r.links)?r.links:[],buyAffiliate:!!r.buy_affiliate,showId:r.show_id,ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
+const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,personId:r.person_id,verify:r.verify||"guess",sceneTime:r.scene_time||"",links:Array.isArray(r.links)?r.links:[],buyAffiliate:!!r.buy_affiliate,showId:r.show_id,platform:r.platform||"",ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toPerson=r=>({id:r.id,name:r.name});
 const VERIFY={official:"동일 제품",similar:"비슷한 제품",guess:"확인 중"};
 const SHOPS=[[/wconcept\.co\.kr$/,"W컨셉"],[/musinsa\.com$/,"무신사"],[/29cm\.co\.kr$/,"29CM"],[/coupang\.com$/,"쿠팡"],[/(smartstore|brand|shopping)\.naver\.com$/,"네이버"],[/zigzag\.kr$/,"지그재그"],[/a-bly\.com$/,"에이블리"],[/kream\.co\.kr$/,"KREAM"],[/ssg\.com$/,"SSG"],[/lotteon\.com$/,"롯데온"],[/hago\.kr$/,"하고"],[/wadiz\.kr$/,"와디즈"],[/11st\.co\.kr$/,"11번가"],[/gmarket\.co\.kr$/,"G마켓"],[/auction\.co\.kr$/,"옥션"],[/oliveyoung\.co\.kr$/,"올리브영"],[/kurly\.com$/,"컬리"],[/ohou\.se$/,"오늘의집"],[/hmall\.com$/,"현대Hmall"],[/gsshop\.com$/,"GS SHOP"],[/cjonstyle\.com$/,"CJ온스타일"],[/lfmall\.co\.kr$/,"LF몰"],[/ssfshop\.com$/,"SSF샵"],[/thehandsome\.com$/,"더한섬닷컴"]];
@@ -138,7 +138,7 @@ function renderCats(){
 function itemCard(it){
   return `<button class="item" data-id="${esc(it.id)}">${thumb(it)}
    <span class="br">${esc(it.brand)}${sampleTag(it)} ${vfTag(it)}</span><span class="nm">${esc(it.name)}</span><span class="pr">${topPriceHtml(it)}</span>
-   <span class="who">${esc([it.person,showOf(it.showId).title].filter(Boolean).join(" · "))}</span></button>`;
+   <span class="who">${esc([it.person,showOf(it.showId).title||it.platform].filter(Boolean).join(" · "))}</span></button>`;
 }
 /* 옆으로 넘기는 줄(PC·태블릿): 넘칠 때만 화살표를 보이고, 끝에 닿으면 그쪽 화살표를 흐리게 */
 function railNav(id){
@@ -182,7 +182,7 @@ function renderPeople(){
 function filteredItems(ignoreCat){
   const words=F.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   return S.items.filter(it=>{
-    const hay=[it.brand,it.name,it.person,showOf(it.showId).title,CATS[it.cat],it.scene,it.ep].join(" ").toLowerCase();
+    const hay=[it.brand,it.name,it.person,showOf(it.showId).title,CATS[it.cat],it.scene,it.ep,it.platform].join(" ").toLowerCase();
     return words.every(w=>hay.includes(w))&&(ignoreCat||!F.cat||it.cat===F.cat)&&(!F.show||it.showId===F.show)&&(!F.person||it.person===F.person);
   }).sort(byNew);
 }
@@ -241,7 +241,7 @@ function feedCard(it){
   return `<article class="fc">
    <button type="button" class="fc-th" data-id="${esc(it.id)}" aria-label="${esc(it.brand+" "+it.name)} 자세히 보기">${thumb(it)}</button>
    <div class="fc-info">
-    <p class="fc-who"><button type="button" class="lnk" data-allperson="${esc(it.person)}">${esc(it.person)}</button>${s.title||it.ep?" · "+esc([s.title,it.ep].filter(Boolean).join(" ")):""}</p>
+    <p class="fc-who"><button type="button" class="lnk" data-allperson="${esc(it.person)}">${esc(it.person)}</button>${s.title||it.platform||it.ep?" · "+esc([s.title||it.platform,it.ep].filter(Boolean).join(" ")):""}</p>
     <button type="button" class="fc-name" data-id="${esc(it.id)}"><span class="br">${esc(it.brand)}${sampleTag(it)} ${vfTag(it)}</span><span class="nm">${esc(it.name)}</span></button>
     <div class="fc-foot"><span class="pr">${topPriceHtml(it)}</span>${m?`<a class="fc-buy" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer${m.aff?" sponsored":""}" data-item="${esc(it.id)}">${esc(m.shop)}에서 보기</a>`
      :`<button type="button" class="fc-buy none" data-id="${esc(it.id)}">자세히</button>`}</div>
@@ -344,7 +344,7 @@ function openItem(id,fromHash){
    <button class="x" id="close" aria-label="닫기">×</button>${thumb(it)}
    <button class="share" id="shareItem" data-share="${esc(it.id)}">링크 공유</button>
    <div class="bd"><span class="br">${esc(it.brand)}${sampleTag(it)}</span><h3>${esc(it.name)}</h3><span class="pr">${topPriceHtml(it)}</span>${hasNum(it.couponPrice)?`<span class="note">${esc(shopName(it.buyUrl))} 쿠폰 적용 시 최대 ${won(it.couponPrice)}</span>`:""}<span class="note">${priceNote(it)}</span>
-   <dl><dt>확인</dt><dd>${vfTag(it)}</dd><dt>인물</dt><dd>${esc(it.person)}</dd>${s.title?`<dt>프로그램</dt><dd>${esc(s.title)}${sceneText(it)?" · "+esc(sceneText(it)):""}</dd>`:sceneText(it)?`<dt>어디서</dt><dd>${esc(sceneText(it))}</dd>`:""}
+   <dl><dt>확인</dt><dd>${vfTag(it)}</dd><dt>인물</dt><dd>${esc(it.person)}</dd>${s.title?`<dt>프로그램</dt><dd>${esc(s.title)}${sceneText(it)?" · "+esc(sceneText(it)):""}</dd>`:(it.platform||sceneText(it))?`<dt>어디서</dt><dd>${esc([it.platform,sceneText(it)].filter(Boolean).join(" · "))}</dd>`:""}
    ${s.platform?`<dt>플랫폼</dt><dd>${esc(s.platform)}</dd>`:""}<dt>분류</dt><dd>${CATS[it.cat]||""}</dd></dl>
    ${it.scene?`<p class="scene">${esc(it.scene)}</p>`:""}
    ${(()=>{const ls=buyLinks(it);if(!ls.length)return `<p class="note">구매처 정보가 아직 없어요.</p>`;
@@ -404,7 +404,8 @@ $("#reqForm").addEventListener("submit",async e=>{
 
 /* ---------- admin ---------- */
 $("#iCat").innerHTML=Object.entries(CATS).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
-$("#sPlat").innerHTML=$("#iPlat").innerHTML=PLATS.map(p=>`<option>${p}</option>`).join("");
+$("#sPlat").innerHTML=PLATS.map(p=>`<option>${p}</option>`).join("");
+$("#iPlat").innerHTML=`<option value="">고르기</option>`+PLATS.map(p=>`<option>${p}</option>`).join("");
 const findShow=t=>S.shows.find(s=>norm(s.title)===norm(t));
 function renderShowSelect(){
   $("#showOptions").innerHTML=S.shows.map(s=>`<option value="${esc(s.title)}">`).join("");
@@ -413,7 +414,7 @@ function renderShowSelect(){
 function syncShowNote(){
   const t=$("#iShow").value.trim(),s=t&&findShow(t);
   if(s){$("#iPlat").value=PLATS.includes(s.platform)?s.platform:"기타";$("#iPlat").disabled=false;$("#iShowNote").textContent="등록된 프로그램이에요. 플랫폼을 바꾸면 저장할 때 이 프로그램의 플랫폼도 같이 바뀌어요."}
-  else{$("#iPlat").disabled=!t;$("#iShowNote").textContent=t?"새 프로그램이에요. 플랫폼을 고르면 저장할 때 함께 추가돼요.":"프로그램이 없는 아이템(브랜드 행사·화보·SNS 등)은 비워 두세요. 어디서 입었는지는 아래 '회차 · 상황' 칸에 쓰면 돼요."}
+  else{$("#iPlat").disabled=false;$("#iShowNote").textContent=t?"새 프로그램이에요. 플랫폼을 고르면 저장할 때 함께 추가돼요.":"프로그램이 없는 아이템(브랜드 행사·화보·SNS 등)은 프로그램을 비우고, 플랫폼에서 '행사·포토콜'·'화보·광고' 같은 종류를 골라 주세요. 어디서 입었는지는 '회차 · 상황' 칸에 쓰면 돼요."}
 }
 $("#iShow").addEventListener("input",syncShowNote);
 const findPerson=n=>S.people.find(p=>norm(p.name)===norm(n));
@@ -486,7 +487,7 @@ function renderAdmin(){
   const ilist=[...S.items].sort(byNew).filter(it=>!lq||norm([it.brand,it.name,it.person,showOf(it.showId).title,it.ep].join(" ")).includes(lq));
   $("#iListCount").textContent=S.items.length?(lq?`찾은 아이템 ${ilist.length}개 / 전체 ${S.items.length}개`:`등록한 아이템 ${S.items.length}개`):"";
   $("#iList").innerHTML=!S.items.length?`<p class="empty">등록된 아이템이 없어요. 왼쪽에서 첫 아이템을 등록해 보세요.</p>`:!ilist.length?`<p class="empty">찾는 아이템이 없어요.</p>`:ilist.map(it=>`<div class="arow">${thumb(it)}
-    <div style="min-width:0"><b>${esc(it.brand)} · ${esc(it.name)}</b><span>${esc([it.person,[showOf(it.showId).title,it.ep].filter(Boolean).join(" ")||"프로그램 없음"].join(" · "))} · ${won(it.price)}${it.priceCheckFailed?" · <em class=\"warn\">가격 확인 실패</em>":it.priceCheckedAt?" · "+md(it.priceCheckedAt)+" 확인":""}</span></div>
+    <div style="min-width:0"><b>${esc(it.brand)} · ${esc(it.name)}</b><span>${esc([it.person,[showOf(it.showId).title||it.platform,it.ep].filter(Boolean).join(" ")||"프로그램 없음"].join(" · "))} · ${won(it.price)}${it.priceCheckFailed?" · <em class=\"warn\">가격 확인 실패</em>":it.priceCheckedAt?" · "+md(it.priceCheckedAt)+" 확인":""}</span></div>
     <div class="btns"><button class="ghost" data-copyurl="${esc(it.id)}">주소 복사</button><button class="ghost" data-edit="item:${esc(it.id)}">수정</button>${delBtn("item",it.id)}</div></div>`).join("");
   $("#sList").innerHTML=S.shows.length?[...S.shows].sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).map(s=>`<div class="arow">
     <div class="pv" style="background:${colorOf(s)}">${okUrl(s.posterUrl)?`<img src="${esc(s.posterUrl)}" alt="">`:""}</div>
@@ -560,19 +561,19 @@ $("#iForm").addEventListener("submit",async e=>{
     const title=$("#iShow").value.trim(),ep=$("#iEp").value.trim();
     let show=title?findShow(title):null,made=false;
     if(title&&!show){
-      const r=must(await sb.from("shows").insert({title,platform:$("#iPlat").value,ep}).select().single());
+      const r=must(await sb.from("shows").insert({title,platform:$("#iPlat").value||"기타",ep}).select().single());
       show={id:r.data.id};made=true;
     }
     const person=await ensurePerson($("#iPerson").value.trim());
     const doc={brand:$("#iBrand").value.trim(),name:$("#iName").value.trim(),cat:$("#iCat").value,price,
       person:person.name,person_id:person.id,verify:$("#iVerify").value,
-      show_id:show?show.id:null,ep,scene:$("#iScene").value.trim(),
+      show_id:show?show.id:null,platform:show?null:($("#iPlat").value||null),ep,scene:$("#iScene").value.trim(),
       buy_url:$("#iUrl").value.trim(),buy_affiliate:$("#iAff").checked,links:readLinks(),
       image_url:up||fetchedImg||(iImg===false?"":(prev.imageUrl||"")),updated_at:now};
     if(fetchedList)doc.list_price=fetchedList;
     if(editI)must(await sb.from("items").update(doc).eq("id",editI));else must(await sb.from("items").insert(doc));
     /* 등록된 프로그램인데 플랫폼을 바꿨으면 프로그램 정보도 고쳐요 (목록에 없는 옛 플랫폼은 '기타'로 보이니 그대로 두면 안 바꿔요) */
-    const plat=$("#iPlat").value,platChanged=show&&!made&&plat!==show.platform&&(PLATS.includes(show.platform)||plat!=="기타");
+    const plat=$("#iPlat").value,platChanged=show&&!made&&plat&&plat!==show.platform&&(PLATS.includes(show.platform)||plat!=="기타");
     if(platChanged)must(await sb.from("shows").update({platform:plat}).eq("id",show.id));
     if(show&&!made&&!editI)must(await sb.from("shows").update({updated_at:now,...(ep?{ep}:{})}).eq("id",show.id));
     const wasEdit=!!editI,rep=fromReport;
@@ -662,7 +663,7 @@ function fillItem(it){
   editI=it.id;iImg=null;
   $("#iBrand").value=it.brand||"";$("#iName").value=it.name||"";$("#iCat").value=it.cat||"top";
   $("#iPrice").value=typeof it.price==="number"?it.price:"";$("#iPerson").value=it.person||"";
-  $("#iShow").value=S.shows.find(s=>s.id===it.showId)?.title||"";syncShowNote();
+  $("#iShow").value=S.shows.find(s=>s.id===it.showId)?.title||"";syncShowNote();if(!it.showId)$("#iPlat").value=it.platform||"";
   $("#iEp").value=it.ep||"";$("#iVerify").value=it.verify||"guess";$("#iScene").value=it.scene||"";$("#iUrl").value=it.buyUrl||"";$("#iAff").checked=!!it.buyAffiliate;setLinks(it.links);syncPersonNote();
   $("#iImg").value="";curImg("#iCur",it.imageUrl,"i");
   $("#iFormTitle").textContent="아이템 수정";$("#iSubmit").textContent="수정 저장";$("#iCancel").hidden=false;
