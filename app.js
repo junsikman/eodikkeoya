@@ -1,4 +1,4 @@
-const CATS={top:"상의",outer:"아우터",bottom:"하의",dress:"원피스",bag:"가방",hat:"모자",shoes:"신발",jewelry:"주얼리",beauty:"뷰티",food:"식품",interior:"인테리어"};
+const CATS={top:"상의",outer:"아우터",bottom:"하의",dress:"원피스",bag:"가방",hat:"모자",shoes:"신발",jewelry:"주얼리",beauty:"뷰티",food:"식품",interior:"인테리어",appliance:"전자제품"};
 const PLATS=["Netflix","TVING","Wavve","YouTube","Disney+","coupangplay","KBS","MBC","SBS","JTBC","tvN","Instagram","공항패션","출근룩","행사·포토콜","화보·광고","기타"];
 const SHAPE={
  top:'<path d="M30 22 42 15Q50 24 58 15L70 22 85 37 74 47 68 41V85H32V41L26 47 15 37Z"/>',
@@ -11,7 +11,8 @@ const SHAPE={
  jewelry:'<circle cx="50" cy="58" r="22" fill="none" stroke-width="7"/><path d="M42 30 50 20 58 30 50 40Z"/>',
  beauty:'<rect x="36" y="50" width="28" height="38" rx="3"/><path d="M40 50V28L60 16V50Z"/>',
  food:'<path d="M18 40H70V60Q70 82 44 82Q18 82 18 60Z"/><path d="M70 46Q86 46 86 57Q86 68 70 67" fill="none" stroke-width="5"/><path d="M34 30Q30 22 36 16M48 30Q44 22 50 16" fill="none"/>',
- interior:'<path d="M34 14H66L80 48H20Z"/><path d="M50 48V82" fill="none" stroke-width="6"/><path d="M30 84H70" fill="none" stroke-width="7" stroke-linecap="round"/>'
+ interior:'<path d="M34 14H66L80 48H20Z"/><path d="M50 48V82" fill="none" stroke-width="6"/><path d="M30 84H70" fill="none" stroke-width="7" stroke-linecap="round"/>',
+ appliance:'<rect x="12" y="20" width="76" height="52" rx="6"/><path d="M38 86H62M50 72V86" fill="none" stroke-width="6"/><path d="M36 8 50 20 64 8" fill="none" stroke-width="4"/>'
 };
 
 const ICON={
@@ -25,7 +26,8 @@ const ICON={
  jewelry:'<circle cx="24" cy="32" r="10"/><path class="au" d="M18 15 21 10H27L30 15 24 22ZM18 15H30M21 10 24 15 27 10M24 15V22"/>',
  beauty:'<path d="M18 24H30V42H18Z"/><path class="au" d="M20 24V13L28 8V24"/><path d="M18 30H30"/>',
  food:'<path d="M9 12Q9 22 24 22Q39 22 39 12Z"/><path d="M24 22V38M15 40Q24 37 33 40"/><circle class="auf" cx="20" cy="16" r=".9"/><circle class="auf" cx="27" cy="15" r=".9"/><circle class="auf" cx="24" cy="18.5" r=".9"/>',
- interior:'<path class="au" d="M24 8Q20.5 13.5 24 17Q27.5 13.5 24 8Z"/><path d="M20 20H28V36H20ZM24 17V20"/><path d="M13 36H35Q35 41.5 24 41.5Q13 41.5 13 36Z"/>'
+ interior:'<path class="au" d="M24 8Q20.5 13.5 24 17Q27.5 13.5 24 8Z"/><path d="M20 20H28V36H20ZM24 17V20"/><path d="M13 36H35Q35 41.5 24 41.5Q13 41.5 13 36Z"/>',
+ appliance:'<rect x="6" y="11" width="36" height="24" rx="3"/><path d="M18 41H30M24 35V41"/><path class="au" d="M18 5 24 11 30 5"/><circle class="auf" cx="37" cy="30.5" r="1.1"/>'
 };
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];

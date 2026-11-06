@@ -24,9 +24,9 @@ const md = iso => { const d = new Date(iso); return isNaN(d) ? "" : `${d.getMont
 const day = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toISOString().slice(0, 10); };
 const httpUrl = u => typeof u === "string" && /^https?:\/\//i.test(u);
 const short = id => String(id).slice(0, 8);
-const CATS = { top: "상의", outer: "아우터", bottom: "하의", dress: "원피스", bag: "가방", hat: "모자", shoes: "신발", jewelry: "주얼리", beauty: "뷰티", food: "식품", interior: "인테리어" };
+const CATS = { top: "상의", outer: "아우터", bottom: "하의", dress: "원피스", bag: "가방", hat: "모자", shoes: "신발", jewelry: "주얼리", beauty: "뷰티", food: "식품", interior: "인테리어", appliance: "전자제품" };
 const VERIFY = { official: "동일 제품", similar: "비슷한 제품", guess: "확인 중" };
-const CAT_KW = { top: "상의·티셔츠·니트", outer: "아우터·자켓·코트", bottom: "하의·바지·치마", dress: "원피스", bag: "가방", hat: "모자", shoes: "신발·운동화", jewelry: "주얼리·액세서리", beauty: "뷰티·화장품", food: "식품·음식", interior: "인테리어·소품" };
+const CAT_KW = { top: "상의·티셔츠·니트", outer: "아우터·자켓·코트", bottom: "하의·바지·치마", dress: "원피스", bag: "가방", hat: "모자", shoes: "신발·운동화", jewelry: "주얼리·액세서리", beauty: "뷰티·화장품", food: "식품·음식", interior: "인테리어·소품", appliance: "전자제품·가전" };
 const SHOPS = [[/wconcept\.co\.kr$/, "W컨셉"], [/musinsa\.com$/, "무신사"], [/29cm\.co\.kr$/, "29CM"], [/coupang\.com$/, "쿠팡"], [/(smartstore|brand|shopping)\.naver\.com$/, "네이버"], [/zigzag\.kr$/, "지그재그"], [/a-bly\.com$/, "에이블리"], [/kream\.co\.kr$/, "KREAM"], [/ssg\.com$/, "SSG"], [/lotteon\.com$/, "롯데온"], [/hago\.kr$/, "하고"], [/wadiz\.kr$/, "와디즈"], [/11st\.co\.kr$/, "11번가"], [/gmarket\.co\.kr$/, "G마켓"], [/auction\.co\.kr$/, "옥션"], [/oliveyoung\.co\.kr$/, "올리브영"], [/kurly\.com$/, "컬리"], [/ohou\.se$/, "오늘의집"], [/hmall\.com$/, "현대Hmall"], [/gsshop\.com$/, "GS SHOP"], [/cjonstyle\.com$/, "CJ온스타일"], [/lfmall\.co\.kr$/, "LF몰"], [/ssfshop\.com$/, "SSF샵"], [/thehandsome\.com$/, "더한섬닷컴"]];
 // 링크프라이스 제휴 링크는 링크 안의 진짜 상품 주소(tu)로 쇼핑몰 이름을 알아내요
 const isLinkPrice = u => /(^|\.)(linkmoa\.kr|lase\.kr|click\.linkprice\.com)$/i.test(u.hostname) || (/\/click\.php$/i.test(u.pathname) && u.searchParams.has("tu") && u.searchParams.has("a"));
@@ -344,8 +344,8 @@ await hubPage("people", "인물별 아이템", "인물별 방송 아이템 모�
 await hubPage("shows", "프로그램별 아이템", "프로그램별 방송 아이템 모음 - 드라마·예능 착장·제품 어디꺼? | 어디꺼야?",
   `드라마·예능·유튜브 ${byShow.size}개 프로그램의 출연자 착장·패션·뷰티·식품 아이템을 프로그램별로 모았어요.`,
   shows.filter(s => byShow.has(s.id)).sort((a, b) => String(b.updated_at || "").localeCompare(String(a.updated_at || ""))).map(s => `<a href="${showUrl(s)}"><b>${esc(s.title)}</b><span>${esc(s.platform || "")}${s.platform ? " · " : ""}아이템 ${byShow.get(s.id).length}개</span></a>`), all);
-await hubPage("category", "분류별 아이템", "분류별 방송 아이템 모음 - 패션·뷰티·식품·인테리어 어디꺼? | 어디꺼야?",
-  `상의, 아우터, 가방, 모자 같은 패션부터 뷰티·화장품, 식품·음식, 인테리어까지 방송에 나온 아이템을 분류별로 모았어요.`,
+await hubPage("category", "분류별 아이템", "분류별 방송 아이템 모음 - 패션·뷰티·식품·인테리어·전자제품 어디꺼? | 어디꺼야?",
+  `상의, 아우터, 가방, 모자 같은 패션부터 뷰티·화장품, 식품·음식, 인테리어, 전자제품까지 방송에 나온 아이템을 분류별로 모았어요.`,
   Object.entries(CATS).filter(([k]) => byCat.has(k)).map(([k, v]) => `<a href="${catUrl(k)}"><b>${esc(v)}</b><span>아이템 ${byCat.get(k).length}개</span></a>`), all);
 
 // ---- 공유 이미지 찍기: 못 만든 페이지는 예전처럼 상품 사진으로 되돌려요 ----
