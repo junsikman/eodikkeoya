@@ -478,7 +478,7 @@ const shopUrlIn=t=>(String(t||"").match(/판매처: (https?:\/\/\S+)/)||[])[1]||
    제휴·추적 표시(쿠팡 lptag·subid, 네이버 NaPm, utm_ 등)는 지우고,
    단축·제휴 링크(쿠팡 파트너스 등)는 '내 제휴 링크' 체크 없이는 쓰지 않아요. */
 const TRACK_PARAM=/^(utm_|nt_|aff_)|^(fbclid|gclid|NaPm|nl-query|nl-ts-pid|lptag|subid|traceid|src|spec|addtag|ctag|wPcid|wRef|wTime|redirect|isAddedCart|sk|afSmartRedirect|tracelog)$/i;
-const REDIRECT_HOST=/(^|\.)(link\.coupang\.com|coupa\.ng|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|click\.linkprice\.com|linkmoa\.kr|adcr\.naver\.com|naver\.me|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|linktr\.ee|link\.inpock\.co\.kr)$/i;
+const REDIRECT_HOST=/(^|\.)(link\.coupang\.com|coupa\.ng|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|click\.linkprice\.com|linkmoa\.kr|lase\.kr|app\.ac|adcr\.naver\.com|naver\.me|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|linktr\.ee|link\.inpock\.co\.kr)$/i;
 function cleanUrl(u){try{const x=new URL(u);let n=0;[...x.searchParams.keys()].forEach(k=>{if(TRACK_PARAM.test(k)){x.searchParams.delete(k);n++}});return{url:n?x.toString():u,removed:n}}catch(e){return{url:u,removed:0}}}
 const isRedirect=u=>{try{const x=new URL(u);return REDIRECT_HOST.test(x.hostname)||isLinkPrice(x)}catch(e){return false}};
 const REDIRECT_MSG="단축·제휴 링크예요. 내 제휴 링크라면 '내 제휴 링크' 체크를 해 주시고, 아니면 판매처 상품 페이지 주소로 바꿔 주세요 (남의 링크면 수수료가 그 사람에게 가요).";
