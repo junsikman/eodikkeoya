@@ -74,7 +74,7 @@ const S={items:[],shows:[],reports:[],people:[],itemsOk:false,showsOk:false,owne
 const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,personId:r.person_id,verify:r.verify||"guess",sceneTime:r.scene_time||"",links:Array.isArray(r.links)?r.links:[],buyAffiliate:!!r.buy_affiliate,showId:r.show_id,platform:r.platform||"",ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toPerson=r=>({id:r.id,name:r.name});
 const VERIFY={official:"동일 제품",similar:"비슷한 제품",guess:"확인 중"};
-const SHOPS=[[/^(naver\.me|brandconnect\.naver\.com)$/,"네이버 스마트스토어"],[/wconcept\.co\.kr$/,"W컨셉"],[/musinsa\.com$/,"무신사"],[/29cm\.co\.kr$/,"29CM"],[/coupang\.com$/,"쿠팡"],[/(smartstore|brand|shopping)\.naver\.com$/,"네이버"],[/zigzag\.kr$/,"지그재그"],[/a-bly\.com$/,"에이블리"],[/kream\.co\.kr$/,"KREAM"],[/ssg\.com$/,"SSG"],[/lotteon\.com$/,"롯데온"],[/hago\.kr$/,"하고"],[/wadiz\.kr$/,"와디즈"],[/11st\.co\.kr$/,"11번가"],[/gmarket\.co\.kr$/,"G마켓"],[/auction\.co\.kr$/,"옥션"],[/oliveyoung\.co\.kr$/,"올리브영"],[/kurly\.com$/,"컬리"],[/ohou\.se$/,"오늘의집"],[/hmall\.com$/,"현대Hmall"],[/gsshop\.com$/,"GS SHOP"],[/cjonstyle\.com$/,"CJ온스타일"],[/lfmall\.co\.kr$/,"LF몰"],[/ssfshop\.com$/,"SSF샵"],[/thehandsome\.com$/,"더한섬닷컴"]];
+const SHOPS=[[/^(naver\.me|brandconnect\.naver\.com)$/,"네이버 스마트스토어"],[/wconcept\.co\.kr$/,"W컨셉"],[/musinsa\.com$/,"무신사"],[/29cm\.co\.kr$/,"29CM"],[/coupang\.com$/,"쿠팡"],[/(smartstore|brand|shopping)\.naver\.com$/,"네이버"],[/zigzag\.kr$/,"지그재그"],[/a-bly\.com$/,"에이블리"],[/kream\.co\.kr$/,"KREAM"],[/ssg\.com$/,"SSG"],[/lotteon\.com$/,"롯데온"],[/hago\.kr$/,"하고"],[/wadiz\.kr$/,"와디즈"],[/11st\.co\.kr$/,"11번가"],[/gmarket\.co\.kr$/,"G마켓"],[/auction\.co\.kr$/,"옥션"],[/oliveyoung\.co\.kr$/,"올리브영"],[/kurly\.com$/,"컬리"],[/ohou\.se$/,"오늘의집"],[/hmall\.com$/,"현대Hmall"],[/gsshop\.com$/,"GS SHOP"],[/cjonstyle\.com$/,"CJ온스타일"],[/lfmall\.co\.kr$/,"LF몰"],[/ssfshop\.com$/,"SSF샵"],[/thehandsome\.com$/,"더한섬닷컴"],[/halfclub\.com$/,"하프클럽"]];
 /* 링크프라이스 제휴 링크(linkmoa.kr, lase.kr, click.linkprice.com …)는 링크 안에 진짜 상품 주소(tu)가 들어 있어요.
    주소 이름은 자주 바뀌어서, 모양(…/click.php?m=쇼핑몰&a=내 번호&tu=상품 주소)으로 알아봐요. */
 function isLinkPrice(u){return /(^|\.)(linkmoa\.kr|lase\.kr|click\.linkprice\.com)$/i.test(u.hostname)||(/\/click\.php$/i.test(u.pathname)&&u.searchParams.has("tu")&&u.searchParams.has("a"))}
@@ -442,7 +442,7 @@ async function ensurePerson(name){
 /* 추가 구매처 줄 */
 function linkRow(l={}){
   const d=document.createElement("div");d.className="lrow";
-  d.innerHTML=`<input class="lshop" maxlength="20" placeholder="쇼핑몰" aria-label="쇼핑몰 이름" value="${esc(l.shop||"")}">
+  d.innerHTML=`<input class="lshop" maxlength="20" list="shopNames" placeholder="쇼핑몰 (고르거나 입력)" aria-label="쇼핑몰 이름" value="${esc(l.shop||"")}">
    <input class="lurl" type="url" maxlength="600" placeholder="https://" aria-label="구매 링크" value="${esc(l.url||"")}">
    <input class="lprice" type="number" min="0" step="1" placeholder="가격(원)" aria-label="이 구매처 가격(원)" value="${hasNum(l.price)?l.price:""}">
    <label class="laff"><input type="checkbox" class="lafc"${l.aff?" checked":""}> 내 제휴</label>
@@ -464,6 +464,14 @@ function readLinks(){
   }).filter(l=>l.url);
 }
 $("#iAddLink").addEventListener("click",()=>{$("#iLinks").appendChild(linkRow());$("#iAddLink").hidden=$("#iLinks").children.length>=5;$("#iLinks").lastElementChild.querySelector(".lurl").focus()});
+/* 쇼핑몰 이름 목록 (직접 입력도 돼요) */
+$("#shopNames").innerHTML=[...new Set(["네이버쇼핑","네이버 스마트스토어",...SHOPS.map(s=>s[1])])].map(n=>`<option value="${esc(n)}">`).join("");
+/* 구매 링크를 넣으면 쇼핑몰 칸이 비어 있을 때 이름을 채워요 */
+$("#iLinks").addEventListener("change",e=>{
+  const u=e.target.closest(".lurl");if(!u)return;
+  const s=u.closest(".lrow").querySelector(".lshop");
+  if(!s.value.trim()&&/^https?:\/\//i.test(u.value.trim())){const n=shopName(u.value.trim());if(n&&n!=="구매처"&&!/\./.test(n))s.value=n}
+});
 $("#iLinks").addEventListener("click",e=>{const b=e.target.closest(".lrm");if(!b)return;b.closest(".lrow").remove();$("#iAddLink").hidden=false});
 let editI=null,editS=null,iImg=null,sImg=null,armed=null,fetchedImg=null,fetchedList=null,fromReport=null,lastFetched="";
 function curImg(box,url,which){
