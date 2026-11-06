@@ -133,7 +133,7 @@ const LINKPRICE_HOST = /(^|\.)(linkmoa\.kr|lase\.kr|click\.linkprice\.com)$/i;
 const isLinkPrice = u => LINKPRICE_HOST.test(u.hostname) || (/\/click\.php$/i.test(u.pathname) && u.searchParams.has("tu") && u.searchParams.has("a"));
 const AD_PARAM = /^(utm_|nv_|n_|airbridge|adfrom|campaign|sub_id|ad_group|ad_creative|query|match|rank|mall_pid|mall_id|hash_str|NaPm|gclid|fbclid|lptag|subid|src|spec|addtag|ctag|traceid)/i;
 // 쿠팡 파트너스·단축 링크는 진짜 주소를 알 수 없어 건너뛰어요 (쿠팡은 로봇 접속도 막아요). 관리자가 넣은 가격을 그대로 둬요.
-const SKIP = /(^|\.)(link\.coupang\.com|coupa\.ng|coupang\.com|app\.ac|naver\.me|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|adcr\.naver\.com)$/i;
+const SKIP = /(^|\.)(link\.coupang\.com|coupa\.ng|coupang\.com|app\.ac|naver\.me|brandconnect\.naver\.com|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|adcr\.naver\.com)$/i;
 class Skip extends Error {}
 function targetUrl(url) {
   const u = new URL(url);

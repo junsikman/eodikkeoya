@@ -74,7 +74,7 @@ const S={items:[],shows:[],reports:[],people:[],itemsOk:false,showsOk:false,owne
 const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,personId:r.person_id,verify:r.verify||"guess",sceneTime:r.scene_time||"",links:Array.isArray(r.links)?r.links:[],buyAffiliate:!!r.buy_affiliate,showId:r.show_id,platform:r.platform||"",ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toPerson=r=>({id:r.id,name:r.name});
 const VERIFY={official:"동일 제품",similar:"비슷한 제품",guess:"확인 중"};
-const SHOPS=[[/wconcept\.co\.kr$/,"W컨셉"],[/musinsa\.com$/,"무신사"],[/29cm\.co\.kr$/,"29CM"],[/coupang\.com$/,"쿠팡"],[/(smartstore|brand|shopping)\.naver\.com$/,"네이버"],[/zigzag\.kr$/,"지그재그"],[/a-bly\.com$/,"에이블리"],[/kream\.co\.kr$/,"KREAM"],[/ssg\.com$/,"SSG"],[/lotteon\.com$/,"롯데온"],[/hago\.kr$/,"하고"],[/wadiz\.kr$/,"와디즈"],[/11st\.co\.kr$/,"11번가"],[/gmarket\.co\.kr$/,"G마켓"],[/auction\.co\.kr$/,"옥션"],[/oliveyoung\.co\.kr$/,"올리브영"],[/kurly\.com$/,"컬리"],[/ohou\.se$/,"오늘의집"],[/hmall\.com$/,"현대Hmall"],[/gsshop\.com$/,"GS SHOP"],[/cjonstyle\.com$/,"CJ온스타일"],[/lfmall\.co\.kr$/,"LF몰"],[/ssfshop\.com$/,"SSF샵"],[/thehandsome\.com$/,"더한섬닷컴"]];
+const SHOPS=[[/^(naver\.me|brandconnect\.naver\.com)$/,"네이버 스마트스토어"],[/wconcept\.co\.kr$/,"W컨셉"],[/musinsa\.com$/,"무신사"],[/29cm\.co\.kr$/,"29CM"],[/coupang\.com$/,"쿠팡"],[/(smartstore|brand|shopping)\.naver\.com$/,"네이버"],[/zigzag\.kr$/,"지그재그"],[/a-bly\.com$/,"에이블리"],[/kream\.co\.kr$/,"KREAM"],[/ssg\.com$/,"SSG"],[/lotteon\.com$/,"롯데온"],[/hago\.kr$/,"하고"],[/wadiz\.kr$/,"와디즈"],[/11st\.co\.kr$/,"11번가"],[/gmarket\.co\.kr$/,"G마켓"],[/auction\.co\.kr$/,"옥션"],[/oliveyoung\.co\.kr$/,"올리브영"],[/kurly\.com$/,"컬리"],[/ohou\.se$/,"오늘의집"],[/hmall\.com$/,"현대Hmall"],[/gsshop\.com$/,"GS SHOP"],[/cjonstyle\.com$/,"CJ온스타일"],[/lfmall\.co\.kr$/,"LF몰"],[/ssfshop\.com$/,"SSF샵"],[/thehandsome\.com$/,"더한섬닷컴"]];
 /* 링크프라이스 제휴 링크(linkmoa.kr, lase.kr, click.linkprice.com …)는 링크 안에 진짜 상품 주소(tu)가 들어 있어요.
    주소 이름은 자주 바뀌어서, 모양(…/click.php?m=쇼핑몰&a=내 번호&tu=상품 주소)으로 알아봐요. */
 function isLinkPrice(u){return /(^|\.)(linkmoa\.kr|lase\.kr|click\.linkprice\.com)$/i.test(u.hostname)||(/\/click\.php$/i.test(u.pathname)&&u.searchParams.has("tu")&&u.searchParams.has("a"))}
@@ -480,7 +480,7 @@ const shopUrlIn=t=>(String(t||"").match(/판매처: (https?:\/\/\S+)/)||[])[1]||
    제휴·추적 표시(쿠팡 lptag·subid, 네이버 NaPm, utm_ 등)는 지우고,
    단축·제휴 링크(쿠팡 파트너스 등)는 '내 제휴 링크' 체크 없이는 쓰지 않아요. */
 const TRACK_PARAM=/^(utm_|nt_|aff_)|^(fbclid|gclid|NaPm|nl-query|nl-ts-pid|lptag|subid|traceid|src|spec|addtag|ctag|wPcid|wRef|wTime|redirect|isAddedCart|sk|afSmartRedirect|tracelog)$/i;
-const REDIRECT_HOST=/(^|\.)(link\.coupang\.com|coupa\.ng|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|click\.linkprice\.com|linkmoa\.kr|lase\.kr|app\.ac|adcr\.naver\.com|naver\.me|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|linktr\.ee|link\.inpock\.co\.kr)$/i;
+const REDIRECT_HOST=/(^|\.)(link\.coupang\.com|coupa\.ng|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|click\.linkprice\.com|linkmoa\.kr|lase\.kr|app\.ac|adcr\.naver\.com|naver\.me|brandconnect\.naver\.com|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|linktr\.ee|link\.inpock\.co\.kr)$/i;
 function cleanUrl(u){try{const x=new URL(u);let n=0;[...x.searchParams.keys()].forEach(k=>{if(TRACK_PARAM.test(k)){x.searchParams.delete(k);n++}});return{url:n?x.toString():u,removed:n}}catch(e){return{url:u,removed:0}}}
 const isRedirect=u=>{try{const x=new URL(u);return REDIRECT_HOST.test(x.hostname)||isLinkPrice(x)}catch(e){return false}};
 const REDIRECT_MSG="단축·제휴 링크예요. 내 제휴 링크라면 '내 제휴 링크' 체크를 해 주시고, 아니면 판매처 상품 페이지 주소로 바꿔 주세요 (남의 링크면 수수료가 그 사람에게 가요).";
@@ -690,6 +690,12 @@ $("#iFetch").addEventListener("click",async e=>{
   const url=$("#iUrl").value.trim();lastFetched=url;
   if(!/^https?:\/\//i.test(url)){toast("상품 링크를 먼저 붙여 넣어 주세요");$("#iUrl").focus();return}
   if(!sb||!S.owner)return;
+  // 짧은 제휴 링크는 열면 클릭으로 잡혀요(가짜 클릭). 네이버 스마트스토어는 프로그램 접속을 막아 둬서 어차피 못 읽어요.
+  const host=(()=>{try{return new URL(url).hostname.replace(/^(www|m)\./,"")}catch(e){return ""}})();
+  if(/(^|\.)(naver\.me|brandconnect\.naver\.com|smartstore\.naver\.com|brand\.naver\.com)$/i.test(host)){
+    $("#iFetchNote").textContent="네이버 스마트스토어·브랜드커넥트 링크는 상품 정보를 불러올 수 없어요(네이버가 막아 둬요). 브랜드·상품명·가격·사진은 직접 넣어 주세요. 같은 상품이 W컨셉·무신사·롯데온에 있으면 그 링크로 먼저 불러온 뒤, 구매 링크만 이 링크로 바꿔도 돼요.";return}
+  if(isRedirect(url)&&realUrl(url)===url){
+    $("#iFetchNote").textContent="짧은 제휴 링크는 열면 클릭으로 잡혀서 불러오지 않아요. 상품 페이지 주소로 먼저 불러온 뒤, 구매 링크를 이 제휴 링크로 바꿔 주세요.";return}
   const btn=e.target;btn.disabled=true;btn.textContent="불러오는 중…";$("#iFetchNote").textContent="쇼핑몰에서 정보를 가져오는 중이에요. 몇 초 걸려요.";
   try{
     const {data,error}=await sb.functions.invoke("fetch-product",{body:{url:realUrl(url)}});
