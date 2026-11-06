@@ -127,16 +127,19 @@ const SHOPS = [
 ];
 
 // 제휴 링크는 직접 열지 않아요 — 매일 로봇이 열면 가짜 클릭으로 잡혀 제휴 계정에 문제가 생길 수 있어요.
-// 링크프라이스(linkmoa.kr·click.linkprice.com)는 링크 안의 진짜 상품 주소(tu)를 대신 열어요.
-const LINKPRICE = /(^|\.)(linkmoa\.kr|click\.linkprice\.com)$/i;
+// 링크프라이스(linkmoa.kr·lase.kr·click.linkprice.com …)는 링크 안의 진짜 상품 주소(tu)를 대신 열어요.
+// 주소 이름은 자주 바뀌어서 모양(…/click.php?m=&a=&tu=)으로도 알아봐요.
+const LINKPRICE_HOST = /(^|\.)(linkmoa\.kr|lase\.kr|click\.linkprice\.com)$/i;
+const isLinkPrice = u => LINKPRICE_HOST.test(u.hostname) || (/\/click\.php$/i.test(u.pathname) && u.searchParams.has("tu") && u.searchParams.has("a"));
+const AD_PARAM = /^(utm_|nv_|n_|airbridge|adfrom|campaign|sub_id|ad_group|ad_creative|query|match|rank|mall_pid|mall_id|hash_str|NaPm|gclid|fbclid|lptag|subid|src|spec|addtag|ctag|traceid)/i;
 // 쿠팡 파트너스·단축 링크는 진짜 주소를 알 수 없어 건너뛰어요 (쿠팡은 로봇 접속도 막아요). 관리자가 넣은 가격을 그대로 둬요.
 const SKIP = /(^|\.)(link\.coupang\.com|coupa\.ng|coupang\.com|naver\.me|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|adcr\.naver\.com)$/i;
 class Skip extends Error {}
 function targetUrl(url) {
   const u = new URL(url);
-  if (LINKPRICE.test(u.hostname)) {
+  if (isLinkPrice(u)) {
     const t = u.searchParams.get("tu");
-    if (t && /^https?:\/\//i.test(t)) return t;
+    if (t && /^https?:\/\//i.test(t)) { const x = new URL(t); [...x.searchParams.keys()].forEach(k => { if (AD_PARAM.test(k)) x.searchParams.delete(k); }); return x.toString(); }
     throw new Skip("링크프라이스 링크에 상품 주소가 없어요");
   }
   if (SKIP.test(u.hostname)) throw new Skip("쿠팡·단축 링크라 자동 확인을 건너뛰어요");
