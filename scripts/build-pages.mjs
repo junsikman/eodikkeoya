@@ -6,7 +6,7 @@
 // 깃허브 자동 작업(.github/workflows/deploy.yml)이 실행해요.
 // 미리보기에서 돌릴 때만 SRC(사이트 파일 폴더)·OUT(결과 폴더)·SITE_URL을 바꿔요.
 import { mkdir, writeFile, copyFile, readFile } from "node:fs/promises";
-import { itemCard, groupCard, renderOg } from "./og-images.mjs";
+import { itemCard, groupCard, instaCard, renderOg } from "./og-images.mjs";
 
 const BASE = (process.env.SITE_URL || "https://wherefrom.store").replace(/\/+$/, "");
 const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
@@ -145,6 +145,7 @@ const FOOT = `<footer class="wrap">
 
 // 공유 이미지(og.jpg)를 만들 페이지 목록 — 다 만든 뒤 한꺼번에 찍어요
 const ogJobs = [];
+const instaJobs = []; // 인스타 카드(insta.jpg): 관리자 화면 '블로그·인스타'에서 받아 써요
 function page({ title, desc, url, image, og = false, ogType = "website", ld, body, mainClass = "" }) {
   return `<!doctype html>
 <html lang="ko">
@@ -225,10 +226,12 @@ function itemPage(it, others) {
   const og = httpUrl(it.image_url);
   if (og) {
     const low = priced.find(l => l.price === min);
-    ogJobs.push({ dir: `item/${short(it.id)}`, fallback: it.image_url, html: itemCard({
+    const card = {
       image: it.image_url, where: [scene, it.person].filter(Boolean).join(" · "), brand: it.brand, name: it.name,
       price: mainIsLowest ? won(it.price) : min !== null ? `최저 ${won(min)}` : "",
-      shop: [mainIsLowest ? shopName(it.buy_url) : low ? low.shop : ""].find(x => x && x !== "구매처") || "" }) });
+      shop: [mainIsLowest ? shopName(it.buy_url) : low ? low.shop : ""].find(x => x && x !== "구매처") || "" };
+    ogJobs.push({ dir: `item/${short(it.id)}`, fallback: it.image_url, html: itemCard(card) });
+    instaJobs.push({ dir: `item/${short(it.id)}`, html: instaCard(card) });
   }
   return page({ title, desc, url, image: og ? it.image_url : "", og, ogType: "product", ld, body });
 }
@@ -350,14 +353,16 @@ await hubPage("category", "분류별 아이템", "분류별 방송 아이템 모
 
 // ---- 공유 이미지 찍기: 못 만든 페이지는 예전처럼 상품 사진으로 되돌려요 ----
 {
-  const made = await renderOg(ogJobs.map(j => ({ html: j.html, file: `${OUT}/${j.dir}/og.jpg` })));
+  const made = await renderOg([...ogJobs.map(j => ({ html: j.html, file: `${OUT}/${j.dir}/og.jpg` })),
+    ...instaJobs.map(j => ({ html: j.html, file: `${OUT}/${j.dir}/insta.jpg`, w: 1080, h: 1350 }))]);
   for (const j of ogJobs) {
     if (made.has(`${OUT}/${j.dir}/og.jpg`)) continue;
     const f = `${OUT}/${j.dir}/index.html`;
     const html = (await readFile(f, "utf8")).replace(/<meta property="og:image" content="[^"]*">\r?\n<meta property="og:image:width"[^\r\n]*/,`<meta property="og:image" content="${esc(j.fallback)}">`);
     await writeFile(f, html);
   }
-  console.log(`공유 이미지 ${made.size}/${ogJobs.length}개를 만들었어요.`);
+  const madeOg = ogJobs.filter(j => made.has(`${OUT}/${j.dir}/og.jpg`)).length;
+  console.log(`공유 이미지 ${madeOg}/${ogJobs.length}개, 인스타 카드 ${made.size - madeOg}/${instaJobs.length}개를 만들었어요.`);
 }
 
 // ---- 6) 사이트맵 ----

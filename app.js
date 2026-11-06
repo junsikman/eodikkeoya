@@ -484,6 +484,74 @@ const REDIRECT_HOST=/(^|\.)(link\.coupang\.com|coupa\.ng|s\.click\.aliexpress\.c
 function cleanUrl(u){try{const x=new URL(u);let n=0;[...x.searchParams.keys()].forEach(k=>{if(TRACK_PARAM.test(k)){x.searchParams.delete(k);n++}});return{url:n?x.toString():u,removed:n}}catch(e){return{url:u,removed:0}}}
 const isRedirect=u=>{try{const x=new URL(u);return REDIRECT_HOST.test(x.hostname)||isLinkPrice(x)}catch(e){return false}};
 const REDIRECT_MSG="단축·제휴 링크예요. 내 제휴 링크라면 '내 제휴 링크' 체크를 해 주시고, 아니면 판매처 상품 페이지 주소로 바꿔 주세요 (남의 링크면 수수료가 그 사람에게 가요).";
+/* ---------- 블로그·인스타 글 만들기 ----------
+   등록한 아이템으로 블로그 글(제목·본문·태그)과 인스타 캡션을 만들어 복사해요.
+   방송 캡처는 사이트에 두지 않고, 글에 넣을 자리와 출처 문구만 만들어 둬요. */
+const SITE="https://wherefrom.store";
+const josa=(w,a,b)=>{const c=String(w||"").trim().slice(-1).charCodeAt(0);return w+(c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28?a:b)};
+const tagify=s=>String(s||"").replace(/[\s·〈〉()\[\]#,]/g,"");
+function postFor(it){
+  const sh=showOf(it.showId),show=sh.title||"",plat=show?sh.platform:it.platform,where=show||it.platform||"";
+  const cat=CATS[it.cat]||"아이템",person=it.person||"",ep=it.ep||"";
+  const fashion=["top","outer","bottom","dress","bag","hat","shoes","jewelry"].includes(it.cat);
+  const verb=fashion?"착용한":it.cat==="food"?"먹은":"사용한";
+  const links=buyLinks(it),aff=links.some(l=>l.aff),page=SITE+"/item/"+shortId(it.id)+"/";
+  const priceTxt=hasNum(it.price)?won(it.price)+(it.priceCheckedAt?` (${md(it.priceCheckedAt)} 기준)`:""):"가격 정보 없음";
+  const src=[plat&&plat!=="기타"?plat:"",show?"〈"+show+"〉":"",ep].filter(Boolean).join(" ");
+  const title=(where?"["+where+"] ":"")+[person,cat,"어디꺼?",it.brand,"정보"].filter(Boolean).join(" ");
+  const intro=(show?show+(ep?" "+ep:"")+"에서 ":ep?ep+"에서 ":"")+(person?josa(person,"이","가")+" ":"")+verb+" "+cat+", 어디 건지 찾아봤어요.";
+  const AFF="이 글에는 제휴 링크가 있어요. 링크로 구매하면 어디꺼야?가 일정 수수료를 받을 수 있어요.";
+  const gray=t=>`<p><span style="color:#888888;font-size:13px">${esc(t)}</span></p>`;
+  const body=[
+    `<p>${esc(intro)}</p>`,
+    `<p><br></p><p style="text-align:center"><b>📷 [여기에 방송 캡처 넣기]</b></p>`,
+    src?`<p style="text-align:center"><span style="color:#888888;font-size:13px">출처: ${esc(src)}</span></p>`:"",
+    it.scene?`<p>${esc(it.scene)}</p>`:"",
+    `<p><br></p><h3>🔎 제품 정보</h3>`,
+    `<p><b>브랜드</b> ${esc(it.brand)}<br><b>상품명</b> ${esc(it.name)}<br><b>가격</b> ${esc(priceTxt)}</p>`,
+    links.length?`<p><b>구매처</b><br>${links.map(l=>`<a href="${esc(l.url)}">${esc(l.shop)}${hasNum(l.price)?" "+won(l.price):""}</a>`).join("<br>")}</p>`:"",
+    okUrl(it.imageUrl)?`<p><br></p><p style="text-align:center"><img src="${esc(page)}og.jpg" alt="${esc(it.brand+" "+it.name)}"></p>`:"",
+    `<p><br></p><p>👉 <a href="${esc(page)}"><b>어디꺼야?에서 자세히 보기</b></a></p>`,
+    `<p>방송에 나온 다른 아이템도 <a href="${SITE}/">wherefrom.store</a>에서 찾아보세요.</p>`,
+    aff?`<p><br></p>`+gray(AFF):""
+  ].filter(Boolean).join("");
+  const text=[intro,"","📷 [여기에 방송 캡처 넣기]",src?"출처: "+src:"",it.scene||"","","🔎 제품 정보","브랜드 "+it.brand,"상품명 "+it.name,"가격 "+priceTxt,
+    ...(links.length?["","구매처",...links.map(l=>l.shop+(hasNum(l.price)?" "+won(l.price):"")+" "+l.url)]:[]),
+    "","👉 어디꺼야?에서 자세히 보기 "+page,aff?"\n"+AFF:""].join("\n").replace(/\n{3,}/g,"\n\n").trim();
+  const tags=[...new Set([show,person,it.brand,cat,person&&person+cat,fashion&&person&&person+"패션",fashion&&show&&show+"패션","방송아이템",fashion?"연예인패션":"연예인템","어디꺼야"].map(tagify).filter(Boolean))];
+  const igTags=[...new Set([...tags,person&&person+(fashion?"착용":"템"),it.brand&&tagify(it.brand)+"정보","연예인템","방송템","정보공유"].map(tagify).filter(Boolean))].slice(0,15);
+  const caption=[
+    [where+(ep?" "+ep:""),person?josa(person,"이","가")+" "+verb+" "+cat:cat].filter(Boolean).join(" ")+" 👀","",
+    "✔️ "+it.brand,"✔️ "+it.name,"💰 "+priceTxt,links.length?"🛒 "+[...new Set(links.map(l=>l.shop))].join(" · "):"","",
+    src?"📷 출처: "+src:"","더 많은 방송 아이템은 프로필 링크에서 👉 wherefrom.store",aff?"※ 제휴 링크로 구매하면 수수료를 받을 수 있어요.":"","",
+    igTags.map(t=>"#"+t).join(" ")
+  ].join("\n").replace(/\n{3,}/g,"\n\n").trim();
+  return {title,body,text,tags:tags.join(","),caption,og:page+"og.jpg",insta:page+"insta.jpg",hasImg:okUrl(it.imageUrl)};
+}
+let curPost=null;
+function openPost(id){
+  const it=S.items.find(i=>i.id===id);if(!it)return;
+  const p=curPost=postFor(it);
+  $("#pdName").textContent=it.brand+" · "+it.name;
+  $("#pdTitle").value=p.title;$("#pdBody").innerHTML=p.body;$("#pdTags").value=p.tags;$("#pdCap").value=p.caption;
+  $("#pdOg").href=p.og;$("#pdInsta").href=p.insta;$("#pdOg").hidden=$("#pdInsta").hidden=!p.hasImg;$("#pdNoImg").hidden=p.hasImg;
+  $("#postDlg").append($("#toast")); // 창 위에 알림이 보이게
+  $("#postDlg").showModal();
+}
+$("#postDlg").addEventListener("close",()=>document.body.append($("#toast")));
+async function copyRich(html,text){
+  try{if(window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([text],{type:"text/plain"})})]);return true}}catch(e){}
+  try{await navigator.clipboard.writeText(text);return true}catch(e){return false}
+}
+$("#postDlg").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-pcopy]");if(!b||!curPost)return;
+  const k=b.dataset.pcopy,p=curPost,plain={title:p.title,body:p.text,tags:p.tags,cap:p.caption}[k];
+  let ok=false;
+  if(k==="body")ok=await copyRich(p.body,p.text);
+  else try{await navigator.clipboard.writeText(plain);ok=true}catch(err){}
+  const msg={title:"제목을 복사했어요",body:"본문을 복사했어요. 블로그에 붙여 넣고 📷 자리에 방송 캡처를 넣어 주세요",tags:"태그를 복사했어요",cap:"인스타 캡션을 복사했어요"}[k];
+  ok?toast(msg):prompt("이 내용을 복사해 주세요",plain);
+});
 function renderAdmin(){
   if(!S.owner)return;
   $$("#admTabs [data-tab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.tab===tab));
@@ -493,7 +561,7 @@ function renderAdmin(){
   $("#iListCount").textContent=S.items.length?(lq?`찾은 아이템 ${ilist.length}개 / 전체 ${S.items.length}개`:`등록한 아이템 ${S.items.length}개`):"";
   $("#iList").innerHTML=!S.items.length?`<p class="empty">등록된 아이템이 없어요. 왼쪽에서 첫 아이템을 등록해 보세요.</p>`:!ilist.length?`<p class="empty">찾는 아이템이 없어요.</p>`:ilist.map(it=>`<div class="arow">${thumb(it)}
     <div style="min-width:0"><b>${esc(it.brand)} · ${esc(it.name)}</b><span>${esc([it.person,[showOf(it.showId).title||it.platform,it.ep].filter(Boolean).join(" ")||"프로그램 없음"].join(" · "))} · ${won(it.price)}${it.priceCheckFailed?" · <em class=\"warn\">가격 확인 실패</em>":it.priceCheckedAt?" · "+md(it.priceCheckedAt)+" 확인":""}</span></div>
-    <div class="btns"><button class="ghost" data-copyurl="${esc(it.id)}">주소 복사</button><button class="ghost" data-edit="item:${esc(it.id)}">수정</button>${delBtn("item",it.id)}</div></div>`).join("");
+    <div class="btns"><button class="ghost" data-post="${esc(it.id)}">블로그·인스타</button><button class="ghost" data-copyurl="${esc(it.id)}">주소 복사</button><button class="ghost" data-edit="item:${esc(it.id)}">수정</button>${delBtn("item",it.id)}</div></div>`).join("");
   $("#sList").innerHTML=S.shows.length?[...S.shows].sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).map(s=>`<div class="arow">
     <div class="pv" style="background:${colorOf(s)}">${okUrl(s.posterUrl)?`<img src="${esc(s.posterUrl)}" alt="">`:""}</div>
     <div style="min-width:0"><b>${esc(s.title)}</b><span>${esc(s.platform)} · ${esc(s.ep||"회차 없음")} · 아이템 ${countFor(s.id)}개</span></div>
@@ -787,6 +855,7 @@ document.addEventListener("click",async e=>{
   }
   if(b.id==="close")return closeItem();
   if(b.dataset.share)return shareItem(b.dataset.share);
+  if(b.dataset.post)return openPost(b.dataset.post);
   if(b.dataset.copyurl){const it=S.items.find(i=>i.id===b.dataset.copyurl);if(!it)return;const url=itemUrl(it);
     try{await navigator.clipboard.writeText(url);toast("아이템 주소를 복사했어요. 새로 올린 아이템은 1시간쯤 뒤에 페이지가 생겨요")}catch(e){prompt("이 주소를 복사해 주세요",url)}return}
   if(b.classList.contains("rail-btn")){const el=document.getElementById(b.closest(".rail-nav").dataset.rail);if(el)el.scrollBy({left:(+b.dataset.dir)*el.clientWidth*0.9});return}

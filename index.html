@@ -209,6 +209,18 @@ footer .logo{font-size:20px;color:var(--ink)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px;display:grid;gap:14px;min-width:0}
 .card h2{font-size:20px;font-weight:700}
 .alist{display:grid;gap:8px;min-width:0}
+.pdlg{width:min(720px,calc(100vw - 32px));max-height:calc(100vh - 32px);border:1px solid var(--line);border-radius:16px;background:var(--surface-solid);color:var(--ink);padding:20px 22px}
+.pdlg::backdrop{background:rgba(0,0,0,.6)}
+.pd-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.pd-top h2{font-size:20px}.pdlg h3{font-size:15px;color:var(--gold);margin:18px 0 8px}
+.pdlg label{display:block;font-size:13px;color:var(--muted);margin:8px 0}
+.pd-row{display:flex;gap:8px;margin-top:4px}.pd-row input{flex:1;min-width:0}
+.pd-lab{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin:10px 0 6px}
+.pd-body{background:#fff;color:#222;border-radius:10px;padding:14px 16px;max-height:260px;overflow:auto;font-size:14px;line-height:1.7}
+.pd-body h3{color:#222;font-size:16px;margin:6px 0}.pd-body a{color:#0b6bcb}.pd-body img{max-width:100%;height:auto}
+.pdlg textarea{width:100%;font-size:14px;line-height:1.6}
+.pd-imgs{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:16px}.pd-imgs .note{width:100%;margin:0}
+.pdlg .primary.pd-sm{margin:0;padding:7px 16px;font-size:13px}
 .arow{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px}
 .arow .th,.arow .pv{width:56px;height:56px;aspect-ratio:auto;border-radius:8px}
 .pv{position:relative;overflow:hidden}
@@ -726,6 +738,29 @@ footer .logo{font-size:20px;color:var(--ink)}
 </footer>
 
 <div class="ov" id="ov" hidden></div>
+<dialog class="pdlg" id="postDlg" aria-labelledby="pdHead">
+  <form method="dialog" class="pd-top"><div><h2 id="pdHead">블로그·인스타 글</h2><p class="note" id="pdName"></p></div><button class="ghost">닫기</button></form>
+  <section>
+    <h3>네이버 블로그</h3>
+    <label>제목<span class="pd-row"><input id="pdTitle" readonly><button type="button" class="ghost" data-pcopy="title">복사</button></span></label>
+    <div class="pd-lab">본문 <button type="button" class="primary pd-sm" data-pcopy="body">본문 복사</button></div>
+    <div class="pd-body" id="pdBody"></div>
+    <p class="note">글쓰기 화면에 붙여 넣은 뒤, <b>📷 자리에 방송 캡처</b>를 넣고 그 줄은 지워 주세요. 출처 문구는 그대로 두세요.</p>
+    <label>태그<span class="pd-row"><input id="pdTags" readonly><button type="button" class="ghost" data-pcopy="tags">복사</button></span></label>
+  </section>
+  <section>
+    <h3>인스타그램</h3>
+    <div class="pd-lab">캡션 <button type="button" class="primary pd-sm" data-pcopy="cap">캡션 복사</button></div>
+    <textarea id="pdCap" rows="9" readonly></textarea>
+    <p class="note">첫 장에 방송 캡처, 둘째 장에 아래 인스타 카드를 넣어 주세요.</p>
+  </section>
+  <div class="pd-imgs">
+    <a class="ghost" id="pdOg" target="_blank" rel="noopener" download>블로그용 상품 카드 (가로)</a>
+    <a class="ghost" id="pdInsta" target="_blank" rel="noopener" download>인스타 카드 (1080×1350)</a>
+    <p class="note" id="pdNoImg" hidden>상품 사진이 없어 카드 이미지를 만들지 않았어요.</p>
+    <p class="note">새로 등록한 아이템은 1시간쯤 뒤에 카드 이미지가 생겨요.</p>
+  </div>
+</dialog>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

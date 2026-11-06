@@ -1,4 +1,4 @@
-// 카톡·SNS 공유 이미지(1200×630)를 만들어요.
+// 카톡·SNS 공유 이미지(1200×630)와 인스타 카드(1080×1350)를 만들어요.
 // 사이트를 만들 때 크롬을 한 번 켜서, 페이지마다 카드 그림을 찍어 og.jpg로 저장해요.
 // 크롬이 없거나 실패하면 그 페이지는 예전처럼 상품 사진을 공유 이미지로 써요.
 import { spawn } from "node:child_process";
@@ -45,9 +45,35 @@ body{font-family:"Noto Sans KR",sans-serif;color:#F4EFE6;word-break:keep-all;ove
 .g.n2 div{grid-row:1/-1}
 .g.n3 div:first-child{grid-row:1/-1}`;
 
-const shell = body => `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+const shell = (body, css = CSS) => `<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&display=block">
-<style>${CSS}</style></head><body>${body}</body></html>`;
+<style>${css}</style></head><body>${body}</body></html>`;
+
+// 인스타 카드: 위에 상품 사진, 아래에 프로그램·인물·브랜드·상품명·가격 (세로 4:5)
+const INSTA_CSS = `*{box-sizing:border-box;margin:0}
+html,body{width:1080px;height:1350px;overflow:hidden;background:#1A1613}
+body{font-family:"Noto Sans KR",sans-serif;color:#F4EFE6;word-break:keep-all;overflow-wrap:anywhere}
+.ig{width:1080px;height:1350px;display:flex;flex-direction:column;padding:56px 64px 54px}
+.pic{height:830px;background:#F4EFE6;border-radius:32px;display:flex;align-items:center;justify-content:center;flex:none}
+.pic img{width:700px;height:750px;object-fit:contain}
+.clamp{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.where{margin-top:40px;font-size:30px;color:#b9ad9d;font-weight:500;-webkit-line-clamp:1}
+.bd{font-weight:900;letter-spacing:-2px;line-height:1.1;margin:8px 0 6px;-webkit-line-clamp:1}
+.pn{font-size:34px;font-weight:500;line-height:1.35;-webkit-line-clamp:2}
+.pr{font-size:40px;font-weight:700;color:#E8C18C;margin-top:18px}
+.pr span{color:#b9ad9d;font-weight:500;font-size:30px;margin-left:12px}
+.ft{margin-top:auto;display:flex;justify-content:space-between;align-items:baseline}
+.brand{font-size:34px;font-weight:900;color:#E8C18C;letter-spacing:-.5px}
+.url{font-size:26px;color:#8d8275;letter-spacing:.5px}`;
+export function instaCard({ image, where, brand, name, price, shop }) {
+  const bs = fit(brand, [[8, 76], [12, 62], [18, 50], [99, 40]]);
+  return shell(`<div class="ig"><div class="pic"><img src="${esc(image)}"></div>
+${where ? `<div class="where clamp">${esc(where)}</div>` : `<div style="margin-top:40px"></div>`}
+<div class="bd clamp" style="font-size:${bs}px">${esc(brand)}</div>
+<div class="pn clamp">${esc(name)}</div>
+${price ? `<div class="pr">${esc(price)}${shop ? `<span>${esc(shop)}</span>` : ""}</div>` : ""}
+<div class="ft"><div class="brand">어디꺼야?</div><div class="url">wherefrom.store</div></div></div>`, INSTA_CSS);
+}
 
 // 글자 수에 맞춰 큰 글씨 크기를 줄여요 (긴 이름도 두 줄 안에)
 const fit = (s, sizes) => { const n = [...String(s)].length; return sizes.find(([max]) => n <= max)?.[1] ?? sizes[sizes.length - 1][1]; };
@@ -85,7 +111,7 @@ const CHROMES = [process.env.CHROME_PATH, "/usr/bin/google-chrome", "/usr/bin/go
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"];
 
 /**
- * jobs: [{ html, file }] → 성공한 file 목록(Set)
+ * jobs: [{ html, file, w?, h? }] → 성공한 file 목록(Set)  (크기를 안 주면 1200×630)
  * 그림이 하나라도 안 불러와지면 그 카드는 실패로 쳐요(빈 칸 있는 이미지를 올리지 않게).
  */
 export async function renderOg(jobs) {
@@ -119,11 +145,13 @@ export async function renderOg(jobs) {
     const { targetId } = await send("Target.createTarget", { url: "about:blank" });
     const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
     await send("Page.enable", {}, sessionId);
-    await send("Emulation.setDeviceMetricsOverride", { width: 1200, height: 630, deviceScaleFactor: 1, mobile: false }, sessionId);
+    let size = "";
 
     let i = 0;
     for (const job of jobs) {
       try {
+        const w = job.w || 1200, h = job.h || 630;
+        if (size !== `${w}x${h}`) { await send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: false }, sessionId); size = `${w}x${h}`; }
         const f = join(dir, `card${i++}.html`);
         await writeFile(f, job.html);
         const loaded = once("Page.loadEventFired", 20000);
@@ -136,7 +164,7 @@ export async function renderOg(jobs) {
             new Promise(r=>setTimeout(()=>r(false),15000))])`,
         }, sessionId);
         if (!result.value) { warn(`공유 이미지: 사진을 못 불러와 건너뛰어요 (${job.file})`); continue; }
-        const { data } = await send("Page.captureScreenshot", { format: "jpeg", quality: 88, clip: { x: 0, y: 0, width: 1200, height: 630, scale: 1 } }, sessionId);
+        const { data } = await send("Page.captureScreenshot", { format: "jpeg", quality: 88, clip: { x: 0, y: 0, width: w, height: h, scale: 1 } }, sessionId);
         await writeFile(job.file, Buffer.from(data, "base64"));
         ok.add(job.file);
       } catch (e) { warn(`공유 이미지 실패 (${job.file}): ${e.message}`); }
