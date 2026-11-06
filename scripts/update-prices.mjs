@@ -61,6 +61,36 @@ async function wconcept(url) {
   return { list, sale: sale ?? list, coupon };
 }
 
+// 무신사: 상품 정보 API에 정가(normalPrice)·판매가(salePrice)·쿠폰/혜택 적용가(finalPrice)가 따로 있어요.
+async function musinsa(url) {
+  const id = (new URL(url).pathname.match(/\/(?:products|app\/goods|goods)\/(\d+)/) || [])[1];
+  if (!id) throw new Error("무신사 상품 번호를 찾지 못했어요");
+  const res = await fetch(`https://goods-detail.musinsa.com/api2/goods/${id}`, { headers: { "User-Agent": UA, Accept: "application/json" } });
+  if (!res.ok) throw new Error(`무신사 응답 ${res.status}`);
+  const p = (await res.json())?.data?.goodsPrice;
+  if (!p) throw new Error("무신사 가격 정보를 찾지 못했어요");
+  const list = toInt(p.normalPrice), sale = toInt(p.salePrice) ?? list;
+  const best = toInt(p.finalPrice) ?? toInt(p.couponPrice);
+  if (!sale) throw new Error("무신사 가격 숫자를 읽지 못했어요");
+  return { list: list && list > sale ? list : null, sale, coupon: best && best < sale ? best : null };
+}
+
+// 롯데온: 페이지의 가격(slPrc)은 정가라서, 상품 정보 API의 할인 적용가(displayPrc)를 판매가로 써요.
+async function lotteon(url) {
+  const u = new URL(url);
+  const pd = (u.pathname.match(/\/p\/product\/(LO\d+)/i) || [])[1];
+  const sitm = u.searchParams.get("sitmNo") || (pd ? `${pd}_${pd.slice(2) * 1 + 1}` : "");
+  if (!sitm) throw new Error("롯데온 상품 번호를 찾지 못했어요");
+  const res = await fetch(`https://pbf.lotteon.com/product/v2/detail/search/base/sitm/${encodeURIComponent(sitm)}?sitmNo=${encodeURIComponent(sitm)}&mall_no=1`, { headers: { "User-Agent": UA, Accept: "application/json" } });
+  if (!res.ok) throw new Error(`롯데온 응답 ${res.status}`);
+  const txt = await res.text();
+  const list = toInt((txt.match(/"slPrc"\s*:\s*(\d+)/) || [])[1]);
+  const shown = [...txt.matchAll(/"displayPrc"\s*:\s*(\d+)/g)].map(m => toInt(m[1])).filter(Boolean);
+  const sale = shown.length ? Math.min(...shown) : list;
+  if (!sale) throw new Error("롯데온 가격 숫자를 읽지 못했어요");
+  return { list: list && list > sale ? list : null, sale, coupon: null };
+}
+
 // 그 밖의 쇼핑몰: 페이지에 들어 있는 표준 상품 정보(JSON-LD, 상품 가격 태그)를 읽어요.
 // 쇼핑몰이 자동 접속을 막으면(네이버 브랜드스토어·스마트스토어 등) 실패하고, 관리자가 넣은 가격을 그대로 둬요.
 async function generic(url) {
@@ -90,8 +120,30 @@ async function generic(url) {
   return { list: null, sale, coupon: null };
 }
 
-const SHOPS = [{ host: /(^|\.)wconcept\.co\.kr$/i, read: wconcept }];
-async function readPrice(url) {
+const SHOPS = [
+  { host: /(^|\.)wconcept\.co\.kr$/i, read: wconcept },
+  { host: /(^|\.)musinsa\.com$/i, read: musinsa },
+  { host: /(^|\.)lotteon\.com$/i, read: lotteon },
+];
+
+// 제휴 링크는 직접 열지 않아요 — 매일 로봇이 열면 가짜 클릭으로 잡혀 제휴 계정에 문제가 생길 수 있어요.
+// 링크프라이스(linkmoa.kr·click.linkprice.com)는 링크 안의 진짜 상품 주소(tu)를 대신 열어요.
+const LINKPRICE = /(^|\.)(linkmoa\.kr|click\.linkprice\.com)$/i;
+// 쿠팡 파트너스·단축 링크는 진짜 주소를 알 수 없어 건너뛰어요 (쿠팡은 로봇 접속도 막아요). 관리자가 넣은 가격을 그대로 둬요.
+const SKIP = /(^|\.)(link\.coupang\.com|coupa\.ng|coupang\.com|naver\.me|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|adcr\.naver\.com)$/i;
+class Skip extends Error {}
+function targetUrl(url) {
+  const u = new URL(url);
+  if (LINKPRICE.test(u.hostname)) {
+    const t = u.searchParams.get("tu");
+    if (t && /^https?:\/\//i.test(t)) return t;
+    throw new Skip("링크프라이스 링크에 상품 주소가 없어요");
+  }
+  if (SKIP.test(u.hostname)) throw new Skip("쿠팡·단축 링크라 자동 확인을 건너뛰어요");
+  return url;
+}
+async function readPrice(link) {
+  const url = targetUrl(link);
   const host = new URL(url).hostname;
   const shop = SHOPS.find(s => s.host.test(host));
   return (shop ? shop.read : generic)(url);
@@ -99,7 +151,7 @@ async function readPrice(url) {
 
 // ---- 실행 ----
 const items = await db("items?select=id,name,buy_url,price,links", { headers: { Prefer: "" } });
-let ok = 0, failed = 0;
+let ok = 0, failed = 0, skipped = 0;
 
 for (const it of items) {
   const now = new Date().toISOString();
@@ -116,8 +168,8 @@ for (const it of items) {
       });
       ok++; console.log(`확인 ${it.name} [대표]: 정가 ${p.list} / 판매가 ${p.sale} / 쿠폰가 ${p.coupon}`);
     } catch (e) {
-      failed++; patch.price_check_failed = true;
-      console.log(`실패 ${it.name} [대표]: ${e.message}`);
+      if (e instanceof Skip) { skipped++; patch.price_check_failed = false; console.log(`건너뜀 ${it.name} [대표]: ${e.message}`); }
+      else { failed++; patch.price_check_failed = true; console.log(`실패 ${it.name} [대표]: ${e.message}`); }
     }
     await sleep(3000); // 판매처에 부담을 주지 않도록 천천히
   }
@@ -132,6 +184,7 @@ for (const it of items) {
       Object.assign(l, { price: p.sale, list: p.list, checked_at: now, failed: false, src: "auto" });
       ok++; console.log(`확인 ${it.name} [${l.shop || new URL(l.url).hostname}]: 판매가 ${p.sale}`);
     } catch (e) {
+      if (e instanceof Skip) { skipped++; console.log(`건너뜀 ${it.name} [${l.shop || "다른 구매처"}]: ${e.message}`); continue; }
       l.failed = true;
       failed++; console.log(`실패 ${it.name} [${l.shop || new URL(l.url).hostname}]: ${e.message}`);
     }
@@ -146,4 +199,5 @@ for (const it of items) {
   }
 }
 
-console.log(`끝: 가격 확인 ${ok}개, 실패 ${failed}개`);
+console.log(`끝: 가격 확인 ${ok}개, 실패 ${failed}개, 건너뜀 ${skipped}개 (쿠팡·단축 링크)`);
+if (process.env.GITHUB_ACTIONS) console.log(`::notice title=가격 확인 결과::확인 ${ok}개, 실패 ${failed}개, 건너뜀 ${skipped}개 (쿠팡·단축 링크는 관리자가 넣은 가격 그대로)`);
