@@ -41,7 +41,7 @@ async function get(path) {
 
 // ---- 1) 사이트 파일 복사 ----
 await mkdir(OUT, { recursive: true });
-for (const f of ["index.html", "app.js", "favicon.svg", "meerkat.webp", "og-default.jpg"]) await copyFile(`${SRC}/${f}`, `${OUT}/${f}`);
+for (const f of ["index.html", "app.js", "favicon.ico", "icon-192.png", "apple-touch-icon.png", "meerkat.webp", "og-default.jpg"]) await copyFile(`${SRC}/${f}`, `${OUT}/${f}`);
 
 // 없는 주소: 아이템 주소면 사이트의 상세 창으로, 아니면 첫 화면으로
 await writeFile(`${OUT}/404.html`, `<!doctype html><meta charset="utf-8"><title>어디꺼야?</title>
@@ -151,7 +151,9 @@ function page({ title, desc, url, image, og = false, ogType = "website", ld, bod
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${url}">
-<link rel="icon" href="${BASE}/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="${BASE}/favicon.ico" sizes="32x32 48x48">
+<link rel="icon" href="${BASE}/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="${BASE}/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <meta property="og:type" content="${ogType}">
