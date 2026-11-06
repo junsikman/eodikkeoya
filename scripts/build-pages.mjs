@@ -27,8 +27,10 @@ const short = id => String(id).slice(0, 8);
 const CATS = { top: "상의", outer: "아우터", bottom: "하의", dress: "원피스", bag: "가방", hat: "모자", shoes: "신발", jewelry: "주얼리", beauty: "뷰티", food: "식품", interior: "인테리어" };
 const VERIFY = { official: "동일 제품", similar: "비슷한 제품", guess: "확인 중" };
 const CAT_KW = { top: "상의·티셔츠·니트", outer: "아우터·자켓·코트", bottom: "하의·바지·치마", dress: "원피스", bag: "가방", hat: "모자", shoes: "신발·운동화", jewelry: "주얼리·액세서리", beauty: "뷰티·화장품", food: "식품·음식", interior: "인테리어·소품" };
-const SHOPS = [[/wconcept\.co\.kr$/, "W컨셉"], [/musinsa\.com$/, "무신사"], [/29cm\.co\.kr$/, "29CM"], [/coupang\.com$/, "쿠팡"], [/(smartstore|brand|shopping)\.naver\.com$/, "네이버"], [/zigzag\.kr$/, "지그재그"], [/a-bly\.com$/, "에이블리"], [/kream\.co\.kr$/, "KREAM"], [/ssg\.com$/, "SSG"], [/lotteon\.com$/, "롯데온"], [/hago\.kr$/, "하고"], [/wadiz\.kr$/, "와디즈"]];
-const shopName = url => { try { const h = new URL(url).hostname.replace(/^(www|m)\./, ""); const f = SHOPS.find(([re]) => re.test(h)); return f ? f[1] : h; } catch { return "구매처"; } };
+const SHOPS = [[/wconcept\.co\.kr$/, "W컨셉"], [/musinsa\.com$/, "무신사"], [/29cm\.co\.kr$/, "29CM"], [/coupang\.com$/, "쿠팡"], [/(smartstore|brand|shopping)\.naver\.com$/, "네이버"], [/zigzag\.kr$/, "지그재그"], [/a-bly\.com$/, "에이블리"], [/kream\.co\.kr$/, "KREAM"], [/ssg\.com$/, "SSG"], [/lotteon\.com$/, "롯데온"], [/hago\.kr$/, "하고"], [/wadiz\.kr$/, "와디즈"], [/11st\.co\.kr$/, "11번가"], [/gmarket\.co\.kr$/, "G마켓"], [/auction\.co\.kr$/, "옥션"], [/oliveyoung\.co\.kr$/, "올리브영"], [/kurly\.com$/, "컬리"], [/ohou\.se$/, "오늘의집"], [/hmall\.com$/, "현대Hmall"], [/gsshop\.com$/, "GS SHOP"], [/cjonstyle\.com$/, "CJ온스타일"], [/lfmall\.co\.kr$/, "LF몰"], [/ssfshop\.com$/, "SSF샵"], [/thehandsome\.com$/, "더한섬닷컴"]];
+// 링크프라이스 제휴 링크는 링크 안의 진짜 상품 주소(tu)로 쇼핑몰 이름을 알아내요
+const realUrl = url => { try { const u = new URL(url); if (/(^|\.)(linkmoa\.kr|click\.linkprice\.com)$/i.test(u.hostname)) { const t = u.searchParams.get("tu"); if (t && /^https?:\/\//i.test(t)) return t; } } catch {} return url; };
+const shopName = url => { try { const h = new URL(realUrl(url)).hostname.replace(/^(www|m)\./, ""); const f = SHOPS.find(([re]) => re.test(h)); return f ? f[1] : h; } catch { return "구매처"; } };
 // 주소에 쓸 이름: 폴더 이름에 못 쓰는 글자만 바꿔요 (한글·띄어쓰기는 그대로)
 const slug = s => String(s || "").trim().replace(/[\/\\?%*:|"<>#&]/g, "-").replace(/\s+/g, " ") || "-";
 const enc = s => encodeURIComponent(s);

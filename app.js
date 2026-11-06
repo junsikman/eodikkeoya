@@ -72,8 +72,10 @@ const S={items:[],shows:[],reports:[],people:[],itemsOk:false,showsOk:false,owne
 const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,personId:r.person_id,verify:r.verify||"guess",sceneTime:r.scene_time||"",links:Array.isArray(r.links)?r.links:[],buyAffiliate:!!r.buy_affiliate,showId:r.show_id,ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toPerson=r=>({id:r.id,name:r.name});
 const VERIFY={official:"동일 제품",similar:"비슷한 제품",guess:"확인 중"};
-const SHOPS=[[/wconcept\.co\.kr$/,"W컨셉"],[/musinsa\.com$/,"무신사"],[/29cm\.co\.kr$/,"29CM"],[/coupang\.com$/,"쿠팡"],[/(smartstore|brand|shopping)\.naver\.com$/,"네이버"],[/zigzag\.kr$/,"지그재그"],[/a-bly\.com$/,"에이블리"],[/kream\.co\.kr$/,"KREAM"],[/ssg\.com$/,"SSG"],[/lotteon\.com$/,"롯데온"],[/hago\.kr$/,"하고"],[/wadiz\.kr$/,"와디즈"]];
-function shopName(url){try{const h=new URL(url).hostname.replace(/^(www|m)\./,"");const f=SHOPS.find(([re])=>re.test(h));return f?f[1]:h}catch(e){return "구매처"}}
+const SHOPS=[[/wconcept\.co\.kr$/,"W컨셉"],[/musinsa\.com$/,"무신사"],[/29cm\.co\.kr$/,"29CM"],[/coupang\.com$/,"쿠팡"],[/(smartstore|brand|shopping)\.naver\.com$/,"네이버"],[/zigzag\.kr$/,"지그재그"],[/a-bly\.com$/,"에이블리"],[/kream\.co\.kr$/,"KREAM"],[/ssg\.com$/,"SSG"],[/lotteon\.com$/,"롯데온"],[/hago\.kr$/,"하고"],[/wadiz\.kr$/,"와디즈"],[/11st\.co\.kr$/,"11번가"],[/gmarket\.co\.kr$/,"G마켓"],[/auction\.co\.kr$/,"옥션"],[/oliveyoung\.co\.kr$/,"올리브영"],[/kurly\.com$/,"컬리"],[/ohou\.se$/,"오늘의집"],[/hmall\.com$/,"현대Hmall"],[/gsshop\.com$/,"GS SHOP"],[/cjonstyle\.com$/,"CJ온스타일"],[/lfmall\.co\.kr$/,"LF몰"],[/ssfshop\.com$/,"SSF샵"],[/thehandsome\.com$/,"더한섬닷컴"]];
+/* 링크프라이스 제휴 링크(linkmoa.kr, click.linkprice.com)는 링크 안에 진짜 상품 주소(tu)가 들어 있어요 → 그 주소로 쇼핑몰 이름을 알아내요 */
+function realUrl(url){try{const u=new URL(url);if(/(^|\.)(linkmoa\.kr|click\.linkprice\.com)$/i.test(u.hostname)){const t=u.searchParams.get("tu");if(t&&/^https?:\/\//i.test(t))return t}}catch(e){}return url}
+function shopName(url){try{const h=new URL(realUrl(url)).hostname.replace(/^(www|m)\./,"");const f=SHOPS.find(([re])=>re.test(h));return f?f[1]:h}catch(e){return "구매처"}}
 const httpUrl=u=>typeof u==="string"&&/^https?:\/\//i.test(u);
 function buyLinks(it){
   const out=[];
@@ -472,7 +474,7 @@ const shopUrlIn=t=>(String(t||"").match(/판매처: (https?:\/\/\S+)/)||[])[1]||
    제휴·추적 표시(쿠팡 lptag·subid, 네이버 NaPm, utm_ 등)는 지우고,
    단축·제휴 링크(쿠팡 파트너스 등)는 '내 제휴 링크' 체크 없이는 쓰지 않아요. */
 const TRACK_PARAM=/^(utm_|nt_|aff_)|^(fbclid|gclid|NaPm|nl-query|nl-ts-pid|lptag|subid|traceid|src|spec|addtag|ctag|wPcid|wRef|wTime|redirect|isAddedCart|sk|afSmartRedirect|tracelog)$/i;
-const REDIRECT_HOST=/(^|\.)(link\.coupang\.com|coupa\.ng|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|click\.linkprice\.com|adcr\.naver\.com|naver\.me|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|linktr\.ee|link\.inpock\.co\.kr)$/i;
+const REDIRECT_HOST=/(^|\.)(link\.coupang\.com|coupa\.ng|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|click\.linkprice\.com|linkmoa\.kr|adcr\.naver\.com|naver\.me|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|linktr\.ee|link\.inpock\.co\.kr)$/i;
 function cleanUrl(u){try{const x=new URL(u);let n=0;[...x.searchParams.keys()].forEach(k=>{if(TRACK_PARAM.test(k)){x.searchParams.delete(k);n++}});return{url:n?x.toString():u,removed:n}}catch(e){return{url:u,removed:0}}}
 const isRedirect=u=>{try{return REDIRECT_HOST.test(new URL(u).hostname)}catch(e){return false}};
 const REDIRECT_MSG="단축·제휴 링크예요. 내 제휴 링크라면 '내 제휴 링크' 체크를 해 주시고, 아니면 판매처 상품 페이지 주소로 바꿔 주세요 (남의 링크면 수수료가 그 사람에게 가요).";
