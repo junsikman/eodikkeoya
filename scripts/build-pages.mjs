@@ -140,7 +140,7 @@ const FOOT = `<footer class="wrap">
   <nav aria-label="모아 보기"><a href="${BASE}/people/">인물별 아이템</a><a href="${BASE}/shows/">프로그램별 아이템</a><a href="${BASE}/category/">분류별 아이템</a></nav>
   <span>아이템 정보는 방송 화면을 보고 찾은 것이라 틀릴 수 있어요.</span>
   <span>구매 링크 중 일부는 제휴 링크일 수 있으며, 이 링크로 구매하면 어디꺼야?가 일정 수수료를 받을 수 있어요.</span>
-  <span>정보 수정·삭제 요청과 문의: <a href="#" class="mail-show" onclick="var e=['zpvlfntm1','naver.com'].join('@');this.href='mailto:'+e;this.textContent=e;this.onclick=null;return false">이메일 보기</a></span>
+  <span>정보 수정·삭제 요청과 문의: <a href="#" class="mail-show" onclick="var e=['wherefromstore','gmail.com'].join('@');this.href='mailto:'+e;this.textContent=e;this.onclick=null;return false">이메일 보기</a></span>
 </footer>`;
 
 // 공유 이미지(og.jpg)를 만들 페이지 목록 — 다 만든 뒤 한꺼번에 찍어요
