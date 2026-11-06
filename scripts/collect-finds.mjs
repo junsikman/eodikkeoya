@@ -32,6 +32,14 @@ const CATS = ["상의", "아우터", "하의", "원피스", "가방", "모자", 
 // 착장·제품 이야기일 가능성이 있는 글만 AI에게 보내요 (시간 절약)
 const HINT = /착용|패션|코디|룩|브랜드|제품|아이템|옷|자켓|재킷|점퍼|패딩|코트|셔츠|니트|후드|맨투맨|바지|팬츠|청바지|데님|치마|스커트|원피스|가방|백|모자|캡|신발|운동화|스니커즈|부츠|목걸이|반지|귀걸이|시계|안경|선글라스|화장품|뷰티|립|향수|크림|세럼|쿠션|선크림|샴푸|비누|바디|헤어|음식|식품|간식|과자|라면|밀키트|소스|양념|김치|커피|음료|술|빵|떡|맛집|인테리어|가구|소파|조명|침구|그릇|주방|냄비|가전|청소기|공기청정기|생활용품|살림|캠핑|추천템|애용템|꿀템|인생템|공구|공동구매|출시|론칭|협찬|정보|어디\s*(꺼|거|제품)|가격|구매|판매/;
 
+// 블로그는 개인 일상 글이 많아요. 제목에 방송·연예인 이야기라는 표시가 있어야 읽어요.
+const CELEB = /착용|방송|드라마|예능|출연|화보|공항\s*패션|출근(길|룩)|연예인|배우|가수|아이돌|멤버|셀럽|스타|유튜버|유튜브\s*(채널|영상)|회차|\d+\s*(화|회)|시즌|나혼산|나혼자산다|편스토랑|팝업|포토콜|포토월|협찬\s*(정보|브랜드)|어디\s*(꺼|거|제품|브랜드)/i;
+// 출연자 자리에 들어오면 안 되는 말 (가족·지인·일반인)
+// 검색어에서 이 낱말들은 이름이 아니에요 (나머지 낱말 = 사람·프로그램·채널 이름)
+const GENERIC = /^(착용|옷|브랜드|연예인|패션|제품|정보|추천템|애용템|공구|공동구매|출시|론칭|사복|사복패션|공항패션|출근룩|아이돌|배우|유튜브|예능|드라마|화보|광고|모델|행사|참석|팝업스토어|포토콜|포토월|화장품|피부관리|샴푸|헤어|향수|다이어트|식품|밀키트|인테리어|소품|가구|가전|음식|간식|집|편의점|품절|음악방송|출근길|촬영장|라디오|패딩|유튜브착용|외출|제품품절|브랜드행사)$/;
+const nameWords = q => q.split(/\s+/).filter(w => w.length >= 2 && !GENERIC.test(w));
+const NOT_PERSON = /^(남편|아내|와이프|신랑|엄마|아빠|어머니|아버지|시어머니|장모|딸|아들|아이|애기|아기|친구|언니|오빠|누나|형|동생|이모|고모|삼촌|조카|지인|직원|사장님|블로거|본인|저|나|모델)$/;
+
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const norm = s => String(s || "").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
@@ -200,6 +208,8 @@ function check(c, text, doc) {
   // 출연자가 분명해야 해요 (블로거 본인 후기·광고 글 거르기)
   if (!person || /^(없음|모름|미상|기타|unknown)$/i.test(person)) return "출연자를 모르는 글이에요";
   if (!t.includes(norm(person))) return "출연자가 글에 없어요";
+  if (NOT_PERSON.test(person.replace(/\s+/g, ""))) return "출연자가 아니라 가족·지인이에요";
+  if (doc.kind === "blog" && !knownPeople.has(norm(person)) && !norm(doc.title).includes(norm(person))) return "블로그 제목에 출연자 이름이 없어요(개인 일상 글일 수 있어요)";
   if (norm(person) === norm(brand)) return "출연자 자리에 브랜드가 들어갔어요";
   if (doc.blogger && norm(person) === norm(doc.blogger)) return "블로거 본인이에요";
   if (/^[a-z0-9_.]+$/i.test(person) || /맘$|님$/.test(person)) return "블로거 닉네임 같아요";
@@ -217,7 +227,8 @@ const AD = /(소정의\s*(원고료|수수료)|업체로부터|제품을\s*(무�
 // ---- 실행 ----
 await ensureModel();
 
-const [shows, items] = await Promise.all([db("shows?select=title"), db("items?select=brand,name")]);
+const [shows, items] = await Promise.all([db("shows?select=title"), db("items?select=brand,name,person")]);
+const knownPeople = new Set(items.map(i => norm(i.person)).filter(Boolean)); // 사이트에 이미 올린 인물
 const known = new Set(items.map(i => norm(i.brand) + "|" + norm(i.name)));
 
 let extra = [];
@@ -235,6 +246,7 @@ console.log(`검색어 ${queries.length}개: ${queries.map(q => q.query).join(",
 // 검색
 const since = Date.now() - DAYS * 86400000;
 const found = new Map();
+let blogSkipped = 0;
 for (const q of queries) {
   for (const kind of ["news", "blog"]) {
     try {
@@ -242,6 +254,7 @@ for (const q of queries) {
         if (!d.link || found.has(d.link)) continue;
         if (d.date && d.date.getTime() < since) continue;
         if (!HINT.test(d.title + " " + d.snippet)) continue;
+        if (kind === "blog" && !CELEB.test(d.title) && !nameWords(q.query).some(w => norm(d.title).includes(norm(w)))) { blogSkipped++; continue; } // 방송·연예인 표시 없는 블로그 글(개인 일상)은 안 읽어요
         found.set(d.link, { ...d, query: q.query, show: q.show });
       }
     } catch (e) { console.log(`검색 실패 [${q.query} · ${kind}]: ${e.message}`); }
@@ -319,6 +332,6 @@ for (const doc of docs) {
 // 깃허브에서 돌 때는 결과를 요약으로 남겨 Actions 화면 맨 위에서 바로 보이게 해요
 if (process.env.GITHUB_ACTIONS) {
   const top = [...drops].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([w, c]) => `${w} ${c}`).join(", ");
-  console.log(`::notice title=자동 수집 결과::새 글 ${docs.length}개 중 ${read}개를 읽고 후보 ${added}개를 제보함에 넣었어요.${top ? ` 많이 버린 이유: ${top}` : ""}`);
+  console.log(`::notice title=자동 수집 결과::새 글 ${docs.length}개 중 ${read}개를 읽고 후보 ${added}개를 제보함에 넣었어요. 개인 일상으로 보이는 블로그 글 ${blogSkipped}개는 읽지 않았어요.${top ? ` 많이 버린 이유: ${top}` : ""}`);
 }
 console.log(`끝: 글 ${read}개를 읽고 후보 ${added}개를 제보함에 ${DRY ? "넣을 예정이에요 (시험 실행이라 저장 안 함)" : "넣었어요"}`);
