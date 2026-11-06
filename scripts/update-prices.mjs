@@ -133,7 +133,7 @@ const LINKPRICE_HOST = /(^|\.)(linkmoa\.kr|lase\.kr|click\.linkprice\.com)$/i;
 const isLinkPrice = u => LINKPRICE_HOST.test(u.hostname) || (/\/click\.php$/i.test(u.pathname) && u.searchParams.has("tu") && u.searchParams.has("a"));
 const AD_PARAM = /^(utm_|nv_|n_|airbridge|adfrom|campaign|sub_id|ad_group|ad_creative|query|match|rank|mall_pid|mall_id|hash_str|NaPm|gclid|fbclid|lptag|subid|src|spec|addtag|ctag|traceid)/i;
 // 쿠팡 파트너스·단축 링크는 진짜 주소를 알 수 없어 건너뛰어요 (쿠팡은 로봇 접속도 막아요). 관리자가 넣은 가격을 그대로 둬요.
-const SKIP = /(^|\.)(link\.coupang\.com|coupa\.ng|coupang\.com|app\.ac|naver\.me|brandconnect\.naver\.com|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|adcr\.naver\.com)$/i;
+const SKIP = /(^|\.)(link\.coupang\.com|coupa\.ng|coupang\.com|app\.ac|naver\.me|brandconnect\.naver\.com|smartstore\.naver\.com|brand\.naver\.com|bit\.ly|han\.gl|me2\.do|vo\.la|t\.ly|tinyurl\.com|s\.click\.aliexpress\.com|ali\.ski|a\.aliexpress\.com|adcr\.naver\.com)$/i;
 class Skip extends Error {}
 function targetUrl(url) {
   const u = new URL(url);
@@ -142,7 +142,7 @@ function targetUrl(url) {
     if (t && /^https?:\/\//i.test(t)) { const x = new URL(t); [...x.searchParams.keys()].forEach(k => { if (AD_PARAM.test(k)) x.searchParams.delete(k); }); return x.toString(); }
     throw new Skip("링크프라이스 링크에 상품 주소가 없어요");
   }
-  if (SKIP.test(u.hostname)) throw new Skip("쿠팡·단축 링크라 자동 확인을 건너뛰어요");
+  if (SKIP.test(u.hostname)) throw new Skip("쿠팡·네이버·단축 링크라 자동 확인을 건너뛰어요");
   return url;
 }
 async function readPrice(link) {
@@ -187,7 +187,7 @@ for (const it of items) {
       Object.assign(l, { price: p.sale, list: p.list, checked_at: now, failed: false, src: "auto" });
       ok++; console.log(`확인 ${it.name} [${l.shop || new URL(l.url).hostname}]: 판매가 ${p.sale}`);
     } catch (e) {
-      if (e instanceof Skip) { skipped++; console.log(`건너뜀 ${it.name} [${l.shop || "다른 구매처"}]: ${e.message}`); continue; }
+      if (e instanceof Skip) { skipped++; if (l.failed) { l.failed = false; linksChanged = true; } console.log(`건너뜀 ${it.name} [${l.shop || "다른 구매처"}]: ${e.message}`); continue; }
       l.failed = true;
       failed++; console.log(`실패 ${it.name} [${l.shop || new URL(l.url).hostname}]: ${e.message}`);
     }
@@ -202,5 +202,5 @@ for (const it of items) {
   }
 }
 
-console.log(`끝: 가격 확인 ${ok}개, 실패 ${failed}개, 건너뜀 ${skipped}개 (쿠팡·단축 링크)`);
-if (process.env.GITHUB_ACTIONS) console.log(`::notice title=가격 확인 결과::확인 ${ok}개, 실패 ${failed}개, 건너뜀 ${skipped}개 (쿠팡·단축 링크는 관리자가 넣은 가격 그대로)`);
+console.log(`끝: 가격 확인 ${ok}개, 실패 ${failed}개, 건너뜀 ${skipped}개 (쿠팡·네이버·단축 링크)`);
+if (process.env.GITHUB_ACTIONS) console.log(`::notice title=가격 확인 결과::확인 ${ok}개, 실패 ${failed}개, 건너뜀 ${skipped}개 (쿠팡·네이버·단축 링크는 관리자가 넣은 가격 그대로)`);
