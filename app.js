@@ -1,4 +1,4 @@
-const CATS={top:"상의",outer:"아우터",bottom:"하의",dress:"원피스",bag:"가방",hat:"모자",shoes:"신발",jewelry:"주얼리",beauty:"뷰티",food:"식품",interior:"인테리어",appliance:"전자제품"};
+const CATS={top:"상의",outer:"아우터",bottom:"하의",dress:"원피스",bag:"가방",hat:"모자",shoes:"신발",jewelry:"악세사리",beauty:"뷰티",food:"식품",interior:"인테리어",appliance:"전자제품"};
 const PLATS=["Netflix","TVING","Wavve","YouTube","Disney+","coupangplay","KBS","MBC","SBS","JTBC","tvN","Instagram","공항패션","출근룩","행사·포토콜","화보·광고","기타"];
 const SHAPE={
  top:'<path d="M30 22 42 15Q50 24 58 15L70 22 85 37 74 47 68 41V85H32V41L26 47 15 37Z"/>',
@@ -895,7 +895,7 @@ document.addEventListener("click",async e=>{
     if(r.auto&&shopUrlIn(r.desc)){const su=shopUrlIn(r.desc);
       if(isRedirect(su))setTimeout(()=>{$("#iFetchNote").textContent="블로그 글의 판매처 링크가 단축·제휴 링크라 넣지 않았어요 (남의 수수료 링크일 수 있어요). 제보함의 쇼핑몰 검색으로 상품을 찾아 주소를 직접 넣어 주세요."},0);
       else $("#iUrl").value=cleanUrl(su).url}
-    const ck=Object.keys(CATS).find(k=>CATS[k]===r.cat);if(ck)$("#iCat").value=ck;
+    const ck=Object.keys(CATS).find(k=>CATS[k]===r.cat)||(r.cat==="주얼리"?"jewelry":"");if(ck)$("#iCat").value=ck;
     const s=findShow(r.show);$("#iShow").value=s?s.title:(r.show||"");syncShowNote();
     toast(r.auto?(s?"자동 수집 내용을 채웠어요. 출처 글과 맞는지 확인하고 구매 링크를 넣어 주세요":"자동 수집 내용을 채웠어요. 새 프로그램이라 플랫폼도 골라 주세요")
       :s?"제보 내용을 채웠어요. 브랜드와 상품명을 넣어 주세요":"제보 내용을 채웠어요. 새 프로그램이라 플랫폼도 골라 주세요");
