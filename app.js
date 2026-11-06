@@ -412,7 +412,7 @@ function renderShowSelect(){
 }
 function syncShowNote(){
   const t=$("#iShow").value.trim(),s=t&&findShow(t);
-  if(s){$("#iPlat").value=PLATS.includes(s.platform)?s.platform:"기타";$("#iPlat").disabled=true;$("#iShowNote").textContent="등록된 프로그램이에요."}
+  if(s){$("#iPlat").value=PLATS.includes(s.platform)?s.platform:"기타";$("#iPlat").disabled=false;$("#iShowNote").textContent="등록된 프로그램이에요. 플랫폼을 바꾸면 저장할 때 이 프로그램의 플랫폼도 같이 바뀌어요."}
   else{$("#iPlat").disabled=!t;$("#iShowNote").textContent=t?"새 프로그램이에요. 플랫폼을 고르면 저장할 때 함께 추가돼요.":"프로그램이 없는 아이템(브랜드 행사·화보·SNS 등)은 비워 두세요. 어디서 입었는지는 아래 '회차 · 상황' 칸에 쓰면 돼요."}
 }
 $("#iShow").addEventListener("input",syncShowNote);
@@ -571,11 +571,14 @@ $("#iForm").addEventListener("submit",async e=>{
       image_url:up||fetchedImg||(iImg===false?"":(prev.imageUrl||"")),updated_at:now};
     if(fetchedList)doc.list_price=fetchedList;
     if(editI)must(await sb.from("items").update(doc).eq("id",editI));else must(await sb.from("items").insert(doc));
+    /* 등록된 프로그램인데 플랫폼을 바꿨으면 프로그램 정보도 고쳐요 (목록에 없는 옛 플랫폼은 '기타'로 보이니 그대로 두면 안 바꿔요) */
+    const plat=$("#iPlat").value,platChanged=show&&!made&&plat!==show.platform&&(PLATS.includes(show.platform)||plat!=="기타");
+    if(platChanged)must(await sb.from("shows").update({platform:plat}).eq("id",show.id));
     if(show&&!made&&!editI)must(await sb.from("shows").update({updated_at:now,...(ep?{ep}:{})}).eq("id",show.id));
     const wasEdit=!!editI,rep=fromReport;
     let repDone=false;
     if(rep&&!wasEdit){try{must(await sb.from("reports").delete().eq("id",rep));repDone=true}catch(e){console.error(e)}}
-    toast((wasEdit?"아이템을 수정했어요":"아이템을 등록했어요")+(made?` · ‘${title}’ 프로그램도 추가했어요`:"")+(repDone?" · 제보함에서도 뺐어요":""));
+    toast((wasEdit?"아이템을 수정했어요":"아이템을 등록했어요")+(made?` · ‘${title}’ 프로그램도 추가했어요`:platChanged?` · ‘${title}’ 플랫폼을 ${plat}(으)로 바꿨어요`:"")+(repDone?" · 제보함에서도 뺐어요":""));
     const keep=!wasEdit&&$("#iKeep").checked;
     resetIForm(keep);
     if(repDone)await loadReports();
