@@ -71,7 +71,7 @@ if(GOATCOUNTER&&location.hash!=="#admin"){
 }
 const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{flowType:"pkce",detectSessionInUrl:true,persistSession:true}}):null;
 const S={items:[],shows:[],reports:[],people:[],itemsOk:false,showsOk:false,owner:false,noDb:false};
-const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,personId:r.person_id,verify:r.verify||"guess",sceneTime:r.scene_time||"",links:Array.isArray(r.links)?r.links:[],buyAffiliate:!!r.buy_affiliate,showId:r.show_id,platform:r.platform||"",ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
+const toItem=r=>({id:r.id,brand:r.brand,name:r.name,cat:r.cat,price:r.price,listPrice:r.list_price,couponPrice:r.coupon_price,priceCheckedAt:r.price_checked_at,priceCheckFailed:!!r.price_check_failed,person:r.person,personId:r.person_id,verify:r.verify||"guess",sceneTime:r.scene_time||"",links:Array.isArray(r.links)?r.links:[],buyAffiliate:!!r.buy_affiliate,buyShop:r.buy_shop||"",showId:r.show_id,platform:r.platform||"",ep:r.ep,scene:r.scene,buyUrl:r.buy_url,imageUrl:r.image_url,createdAt:r.created_at,updatedAt:r.updated_at});
 const toPerson=r=>({id:r.id,name:r.name});
 const VERIFY={official:"동일 제품",similar:"비슷한 제품",guess:"확인 중"};
 const SHOPS=[[/^(naver\.me|brandconnect\.naver\.com)$/,"네이버 스마트스토어"],[/wconcept\.co\.kr$/,"W컨셉"],[/musinsa\.com$/,"무신사"],[/29cm\.co\.kr$/,"29CM"],[/coupang\.com$/,"쿠팡"],[/(smartstore|brand|shopping)\.naver\.com$/,"네이버"],[/zigzag\.kr$/,"지그재그"],[/a-bly\.com$/,"에이블리"],[/kream\.co\.kr$/,"KREAM"],[/ssg\.com$/,"SSG"],[/lotteon\.com$/,"롯데온"],[/hago\.kr$/,"하고"],[/wadiz\.kr$/,"와디즈"],[/11st\.co\.kr$/,"11번가"],[/gmarket\.co\.kr$/,"G마켓"],[/auction\.co\.kr$/,"옥션"],[/oliveyoung\.co\.kr$/,"올리브영"],[/kurly\.com$/,"컬리"],[/ohou\.se$/,"오늘의집"],[/hmall\.com$/,"현대Hmall"],[/gsshop\.com$/,"GS SHOP"],[/cjonstyle\.com$/,"CJ온스타일"],[/lfmall\.co\.kr$/,"LF몰"],[/ssfshop\.com$/,"SSF샵"],[/thehandsome\.com$/,"더한섬닷컴"],[/halfclub\.com$/,"하프클럽"]];
@@ -80,11 +80,13 @@ const SHOPS=[[/^(naver\.me|brandconnect\.naver\.com)$/,"네이버 스마트스�
 function isLinkPrice(u){return /(^|\.)(linkmoa\.kr|lase\.kr|click\.linkprice\.com)$/i.test(u.hostname)||(/\/click\.php$/i.test(u.pathname)&&u.searchParams.has("tu")&&u.searchParams.has("a"))}
 const AD_PARAM=/^(utm_|nv_|n_|airbridge|adfrom|campaign|sub_id|ad_group|ad_creative|query|match|rank|mall_pid|mall_id|hash_str|NaPm|gclid|fbclid|lptag|subid|src|spec|addtag|ctag|traceid)/i;
 function realUrl(url){try{const u=new URL(url);if(isLinkPrice(u)){const t=u.searchParams.get("tu");if(t&&/^https?:\/\//i.test(t)){const x=new URL(t);[...x.searchParams.keys()].forEach(k=>{if(AD_PARAM.test(k))x.searchParams.delete(k)});return x.toString()}}}catch(e){}return url}
+/* 대표 구매처 이름: 관리자가 적은 판매처가 먼저, 없으면 링크 주소로 알아봐요 */
+const mainShop=it=>String(it.buyShop||"").trim()||shopName(it.buyUrl);
 function shopName(url){try{const h=new URL(realUrl(url)).hostname.replace(/^(www|m)\./,"");const f=SHOPS.find(([re])=>re.test(h));return f?f[1]:h}catch(e){return "구매처"}}
 const httpUrl=u=>typeof u==="string"&&/^https?:\/\//i.test(u);
 function buyLinks(it){
   const out=[];
-  if(httpUrl(it.buyUrl))out.push({shop:shopName(it.buyUrl),url:it.buyUrl,aff:it.buyAffiliate,main:true,price:hasNum(it.price)?it.price:null,checked:it.priceCheckedAt});
+  if(httpUrl(it.buyUrl))out.push({shop:mainShop(it),url:it.buyUrl,aff:it.buyAffiliate,main:true,price:hasNum(it.price)?it.price:null,checked:it.priceCheckedAt});
   for(const l of it.links||[])if(l&&httpUrl(l.url))out.push({shop:(l.shop||"").trim()||shopName(l.url),url:l.url,aff:!!l.aff,price:hasNum(l.price)?l.price:null,checked:l.checked_at||null});
   const priced=out.filter(l=>hasNum(l.price));
   if(priced.length>1){const min=Math.min(...priced.map(l=>l.price));priced.forEach(l=>{if(l.price===min)l.lowest=true})}
@@ -348,7 +350,7 @@ function openItem(id,fromHash){
   $("#ov").innerHTML=`<div class="md" role="dialog" aria-modal="true" aria-label="${esc(it.name)}">
    <button class="x" id="close" aria-label="닫기">×</button>${thumb(it)}
    <button class="share" id="shareItem" data-share="${esc(it.id)}">링크 공유</button>
-   <div class="bd"><span class="br">${esc(it.brand)}${sampleTag(it)}</span><h3>${esc(it.name)}</h3><span class="pr">${topPriceHtml(it)}</span>${hasNum(it.couponPrice)?`<span class="note">${esc(shopName(it.buyUrl))} 쿠폰 적용 시 최대 ${won(it.couponPrice)}</span>`:""}<span class="note">${priceNote(it)}</span>
+   <div class="bd"><span class="br">${esc(it.brand)}${sampleTag(it)}</span><h3>${esc(it.name)}</h3><span class="pr">${topPriceHtml(it)}</span>${hasNum(it.couponPrice)?`<span class="note">${esc(mainShop(it))} 쿠폰 적용 시 최대 ${won(it.couponPrice)}</span>`:""}<span class="note">${priceNote(it)}</span>
    <dl><dt>확인</dt><dd>${vfTag(it)}</dd><dt>인물</dt><dd>${esc(it.person)}</dd>${s.title?`<dt>프로그램</dt><dd>${esc(s.title)}${sceneText(it)?" · "+esc(sceneText(it)):""}</dd>`:(it.platform||sceneText(it))?`<dt>어디서</dt><dd>${esc([it.platform,sceneText(it)].filter(Boolean).join(" · "))}</dd>`:""}
    ${s.platform?`<dt>플랫폼</dt><dd>${esc(s.platform)}</dd>`:""}<dt>분류</dt><dd>${CATS[it.cat]||""}</dd></dl>
    ${it.scene?`<p class="scene">${esc(it.scene)}</p>`:""}
@@ -596,7 +598,7 @@ function renderAdmin(){
 function resetIForm(keep){
   const kept=keep?{show:$("#iShow").value,ep:$("#iEp").value,person:$("#iPerson").value,plat:$("#iPlat").value}:null;
   const keepOn=$("#iKeep").checked;
-  editI=null;iImg=null;fetchedImg=null;fetchedList=null;fromReport=null;lastFetched="";$("#iForm").reset();$("#iKeep").checked=keepOn;$("#iRepNote").hidden=true;
+  editI=null;iImg=null;fetchedImg=null;fetchedList=null;fromReport=null;lastFetched="";$("#iForm").reset();$("#iShop").dataset.auto="";$("#iKeep").checked=keepOn;$("#iRepNote").hidden=true;
   if(kept){$("#iShow").value=kept.show;$("#iEp").value=kept.ep;$("#iPerson").value=kept.person;$("#iPlat").value=kept.plat}setLinks([]);syncPersonNote();curImg("#iCur");$("#iFormTitle").textContent="아이템 등록";$("#iSubmit").textContent="등록하기";$("#iCancel").hidden=true;renderShowSelect()}
 function resetSForm(){editS=null;sImg=null;$("#sForm").reset();curImg("#sCur");$("#sFormTitle").textContent="프로그램 등록";$("#sSubmit").textContent="등록하기";$("#sCancel").hidden=true}
 async function shrink(f){
@@ -649,7 +651,7 @@ $("#iForm").addEventListener("submit",async e=>{
     const doc={brand:$("#iBrand").value.trim(),name:$("#iName").value.trim(),cat:$("#iCat").value,price,
       person:person.name,person_id:person.id,verify:$("#iVerify").value,
       show_id:show?show.id:null,platform:show?null:($("#iPlat").value||null),ep,scene:$("#iScene").value.trim(),
-      buy_url:$("#iUrl").value.trim(),buy_affiliate:$("#iAff").checked,links:readLinks(),
+      buy_url:$("#iUrl").value.trim(),buy_shop:$("#iShop").value.trim()||null,buy_affiliate:$("#iAff").checked,links:readLinks(),
       image_url:up||fetchedImg||(iImg===false?"":(prev.imageUrl||"")),updated_at:now};
     if(fetchedList)doc.list_price=fetchedList;
     if(editI)must(await sb.from("items").update(doc).eq("id",editI));else must(await sb.from("items").insert(doc));
@@ -685,6 +687,15 @@ $("#sForm").addEventListener("submit",async e=>{
   btn.disabled=false;
 });
 $("#iCancel").addEventListener("click",()=>resetIForm());
+/* 대표 구매 링크를 넣으면, 판매처 칸이 비어 있거나 자동으로 채운 값일 때 쇼핑몰 이름을 채워요 */
+function autoShop(){
+  const u=$("#iUrl").value.trim(),s=$("#iShop");
+  if(s.value.trim()&&s.value!==s.dataset.auto)return; // 직접 적은 이름은 그대로 둬요
+  let n="";if(/^https?:\/\//i.test(u)){n=shopName(u);if(!n||n==="구매처"||/\./.test(n))n=""}
+  s.value=n;s.dataset.auto=n;
+}
+$("#iUrl").addEventListener("input",autoShop);
+$("#iShop").addEventListener("input",()=>{$("#iShop").dataset.auto=""});
 $("#iUrl").addEventListener("paste",()=>setTimeout(()=>{
   let u=$("#iUrl").value.trim();
   if(!/^https?:\/\//i.test(u))return;
@@ -751,7 +762,7 @@ function fillItem(it){
   $("#iBrand").value=it.brand||"";$("#iName").value=it.name||"";$("#iCat").value=it.cat||"top";
   $("#iPrice").value=typeof it.price==="number"?it.price:"";$("#iPerson").value=it.person||"";
   $("#iShow").value=S.shows.find(s=>s.id===it.showId)?.title||"";syncShowNote();if(!it.showId)$("#iPlat").value=it.platform||"";
-  $("#iEp").value=it.ep||"";$("#iVerify").value=it.verify||"guess";$("#iScene").value=it.scene||"";$("#iUrl").value=it.buyUrl||"";$("#iAff").checked=!!it.buyAffiliate;setLinks(it.links);syncPersonNote();
+  $("#iEp").value=it.ep||"";$("#iVerify").value=it.verify||"guess";$("#iScene").value=it.scene||"";$("#iUrl").value=it.buyUrl||"";$("#iShop").value=it.buyShop||"";$("#iShop").dataset.auto="";$("#iAff").checked=!!it.buyAffiliate;setLinks(it.links);syncPersonNote();
   $("#iImg").value="";curImg("#iCur",it.imageUrl,"i");
   $("#iFormTitle").textContent="아이템 수정";$("#iSubmit").textContent="수정 저장";$("#iCancel").hidden=false;
   $("#iForm").scrollIntoView({behavior:"smooth",block:"start"});
@@ -902,7 +913,7 @@ document.addEventListener("click",async e=>{
     if(r.brand)$("#iBrand").value=r.brand;if(r.name)$("#iName").value=r.name;
     if(r.auto&&shopUrlIn(r.desc)){const su=shopUrlIn(r.desc);
       if(isRedirect(su))setTimeout(()=>{$("#iFetchNote").textContent="블로그 글의 판매처 링크가 단축·제휴 링크라 넣지 않았어요 (남의 수수료 링크일 수 있어요). 제보함의 쇼핑몰 검색으로 상품을 찾아 주소를 직접 넣어 주세요."},0);
-      else $("#iUrl").value=cleanUrl(su).url}
+      else{$("#iUrl").value=cleanUrl(su).url;autoShop()}}
     const ck=Object.keys(CATS).find(k=>CATS[k]===r.cat)||(r.cat==="주얼리"?"jewelry":"");if(ck)$("#iCat").value=ck;
     const s=findShow(r.show);$("#iShow").value=s?s.title:(r.show||"");syncShowNote();
     toast(r.auto?(s?"자동 수집 내용을 채웠어요. 출처 글과 맞는지 확인하고 구매 링크를 넣어 주세요":"자동 수집 내용을 채웠어요. 새 프로그램이라 플랫폼도 골라 주세요")

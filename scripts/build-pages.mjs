@@ -30,6 +30,8 @@ const CAT_KW = { top: "상의·티셔츠·니트", outer: "아우터·자켓·�
 const SHOPS = [[/^(naver\.me|brandconnect\.naver\.com)$/, "네이버 스마트스토어"], [/wconcept\.co\.kr$/, "W컨셉"], [/musinsa\.com$/, "무신사"], [/29cm\.co\.kr$/, "29CM"], [/coupang\.com$/, "쿠팡"], [/(smartstore|brand|shopping)\.naver\.com$/, "네이버"], [/zigzag\.kr$/, "지그재그"], [/a-bly\.com$/, "에이블리"], [/kream\.co\.kr$/, "KREAM"], [/ssg\.com$/, "SSG"], [/lotteon\.com$/, "롯데온"], [/hago\.kr$/, "하고"], [/wadiz\.kr$/, "와디즈"], [/11st\.co\.kr$/, "11번가"], [/gmarket\.co\.kr$/, "G마켓"], [/auction\.co\.kr$/, "옥션"], [/oliveyoung\.co\.kr$/, "올리브영"], [/kurly\.com$/, "컬리"], [/ohou\.se$/, "오늘의집"], [/hmall\.com$/, "현대Hmall"], [/gsshop\.com$/, "GS SHOP"], [/cjonstyle\.com$/, "CJ온스타일"], [/lfmall\.co\.kr$/, "LF몰"], [/ssfshop\.com$/, "SSF샵"], [/thehandsome\.com$/, "더한섬닷컴"], [/halfclub\.com$/, "하프클럽"]];
 // 링크프라이스 제휴 링크는 링크 안의 진짜 상품 주소(tu)로 쇼핑몰 이름을 알아내요
 const isLinkPrice = u => /(^|\.)(linkmoa\.kr|lase\.kr|click\.linkprice\.com)$/i.test(u.hostname) || (/\/click\.php$/i.test(u.pathname) && u.searchParams.has("tu") && u.searchParams.has("a"));
+// 대표 구매처 이름: 관리자가 적은 판매처가 먼저, 없으면 링크 주소로 알아봐요
+const mainShop = it => String(it.buy_shop || "").trim() || shopName(it.buy_url);
 const realUrl = url => { try { const u = new URL(url); if (isLinkPrice(u)) { const t = u.searchParams.get("tu"); if (t && /^https?:\/\//i.test(t)) return t; } } catch {} return url; };
 const shopName = url => { try { const h = new URL(realUrl(url)).hostname.replace(/^(www|m)\./, ""); const f = SHOPS.find(([re]) => re.test(h)); return f ? f[1] : h; } catch { return "구매처"; } };
 // 주소에 쓸 이름: 폴더 이름에 못 쓰는 글자만 바꿔요 (한글·띄어쓰기는 그대로)
@@ -77,7 +79,7 @@ const itemUrl = it => `${BASE}/item/${short(it.id)}/`;
 function buyInfo(it) {
   const num = v => (typeof v === "number" && isFinite(v) ? v : null);
   const links = [];
-  if (httpUrl(it.buy_url)) links.push({ shop: shopName(it.buy_url), url: it.buy_url, aff: !!it.buy_affiliate, main: true, price: num(it.price) });
+  if (httpUrl(it.buy_url)) links.push({ shop: mainShop(it), url: it.buy_url, aff: !!it.buy_affiliate, main: true, price: num(it.price) });
   for (const l of Array.isArray(it.links) ? it.links : []) if (l && httpUrl(l.url)) links.push({ shop: (l.shop || "").trim() || shopName(l.url), url: l.url, aff: !!l.aff, price: num(l.price) });
   const priced = links.filter(l => l.price !== null);
   const min = priced.length ? Math.min(...priced.map(l => l.price)) : null;
@@ -209,7 +211,7 @@ function itemPage(it, others) {
     <h1>${esc(it.name)}</h1>
     <p class="note">${esc([scene, it.person].filter(Boolean).join(" "))} ${esc(cat)} 정보</p>
     ${mainIsLowest ? `<div class="pr">${off ? `<s class="was">${won(it.list_price)}</s> <span class="off">${off}%</span> ` : ""}${won(it.price)}</div>` : min !== null ? `<div class="pr"><span class="off">최저</span> ${won(min)}</div>` : ""}
-    ${it.coupon_price && it.coupon_price < it.price ? `<p class="note">${esc(shopName(it.buy_url))} 쿠폰 적용 시 최대 ${won(it.coupon_price)}</p>` : ""}
+    ${it.coupon_price && it.coupon_price < it.price ? `<p class="note">${esc(mainShop(it))} 쿠폰 적용 시 최대 ${won(it.coupon_price)}</p>` : ""}
     <p class="note">${it.price_checked_at ? `${md(it.price_checked_at)} 판매처 기준 · 가격은 바뀔 수 있어요` : "등록할 때 가격이에요. 판매처에서 확인해 주세요"}</p>
     <dl>
       <dt>인물</dt><dd>${it.person ? `<a href="${personUrl(it.person)}">${esc(it.person)}</a>` : ""}</dd>
@@ -229,7 +231,7 @@ function itemPage(it, others) {
     const card = {
       image: it.image_url, where: [scene, it.person].filter(Boolean).join(" · "), brand: it.brand, name: it.name,
       price: mainIsLowest ? won(it.price) : min !== null ? `최저 ${won(min)}` : "",
-      shop: [mainIsLowest ? shopName(it.buy_url) : low ? low.shop : ""].find(x => x && x !== "구매처") || "" };
+      shop: [mainIsLowest ? mainShop(it) : low ? low.shop : ""].find(x => x && x !== "구매처") || "" };
     ogJobs.push({ dir: `item/${short(it.id)}`, fallback: it.image_url, html: itemCard(card) });
     instaJobs.push({ dir: `item/${short(it.id)}`, html: instaCard(card) });
   }
