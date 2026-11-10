@@ -49,6 +49,35 @@ const toneOf=s=>{let h=0;for(const ch of String(s||""))h=(h*31+ch.charCodeAt(0))
 const hex=c=>/^#[0-9a-f]{6}$/i.test(c||"")?c:"#C9A88A";
 const colorOf=x=>/^#[0-9a-f]{6}$/i.test(x.color||"")?x.color:toneOf(x.title||x.name);
 const norm=s=>String(s||"").replace(/\s/g,"").toLowerCase();
+/* 줄임말·영어 이름 검색: 같은 줄에 있는 말은 서로 같은 걸로 찾아요 (띄어쓰기 없이 소문자로) */
+const ALIAS_GROUPS=[
+  ["나혼산","나혼자산다"],["나솔","나는솔로"],["나솔사계","나는솔로사계"],["틈만","틈만나면"],["무도","무한도전"],["놀뭐","놀면뭐하니"],
+  ["전참시","전지적참견시점"],["미우새","미운우리새끼"],["슈돌","슈퍼맨이돌아왔다"],["아형","아는형님"],["놀토","놀라운토요일"],
+  ["냉부","냉부해","냉장고를부탁해"],["유퀴즈","유퀴즈온더블럭"],["지락실","지구오락실"],["태계일주","태어난김에세계일주"],["1박","1박2일"],
+  ["런닝","런닝맨"],["편스","편스토랑"],["살림남","살림하는남자들"],["동상이몽","너는내운명"],["산지직송","언니네산지직송"],
+  ["나이키","nike"],["아디다스","adidas"],["뉴발","뉴발란스","newbalance"],["노페","노스페이스","northface","thenorthface"],
+  ["몽클","몽클레르","moncler"],["스투","스투시","stussy"],["아크","아크테릭스","arcteryx"],["젠몬","젠틀몬스터","gentlemonster"],
+  ["꼼데","꼼데가르송","commedesgarcons"],["보테가","보테가베네타","bottegaveneta"],["구찌","gucci"],["프라다","prada"],["샤넬","chanel"],
+  ["디올","dior"],["루이비통","루이뷔통","louisvuitton"],["셀린느","celine"],["미우미우","miumiu"],["메종키","메종키츠네","maisonkitsune"],
+  ["버버리","burberry"],["폴로","폴로랄프로렌","ralphlauren"],["타미","타미힐피거","tommyhilfiger"],["라코스테","lacoste"],["유니클로","uniqlo"],
+  ["자라","zara"],["캉골","kangol"],["반스","vans"],["컨버스","converse"],["살로몬","salomon"],["아식스","asics"],["푸마","puma"],
+  ["칼하트","carhartt"],["르메르","lemaire"],["아더에러","adererror"],["마뗑킴","matinkim"],["엠엘비","mlb"],["뉴에라","newera"],
+  ["듀베티카","duvetica"],["산드로","sandro"],["네파","nepa"],["도브","dove"],["논로컬","nonlocal"],["디스커버리","discovery"],["코오롱","kolon"]
+];
+const ALIAS={};ALIAS_GROUPS.forEach(g=>g.forEach(w=>{(ALIAS[w]=ALIAS[w]||[]).push(...g)}));
+/* 초성 검색: 'ㅇㅈㅅ'로 '유재석'을 찾아요 */
+const CHO="ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+const cho=s=>[...String(s||"")].map(c=>{const k=c.charCodeAt(0)-0xAC00;return k>=0&&k<11172?CHO[Math.floor(k/588)]:c}).join("");
+const isCho=w=>/^[ㄱ-ㅎ]+$/.test(w);
+/* 검색어 한 덩어리가 글(hay)에 맞는지: 그대로, 띄어쓰기 무시, 줄임말·영어 이름, 초성 */
+function hitWord(w,hay){
+  const f=norm(hay),k=norm(w);if(!k)return true;
+  if(hay.toLowerCase().includes(w.toLowerCase())||f.includes(k))return true;
+  if((ALIAS[k]||[]).some(a=>f.includes(a)))return true;
+  return isCho(k)&&cho(f).includes(k);
+}
+/* 검색어 전체가 맞는지: 띄어 쓴 낱말이 모두 맞거나, 붙여서 한 말로 맞으면 (예: new balance) */
+const hitQuery=(q,hay)=>{const ws=String(q||"").trim().split(/\s+/).filter(Boolean);return !ws.length||ws.every(w=>hitWord(w,hay))||(ws.length>1&&hitWord(ws.join(""),hay))};
 function shade(h,amt){h=hex(h);let n=parseInt(h.slice(1),16),c=v=>Math.max(0,Math.min(255,v));
   return "#"+((1<<24)+(c((n>>16)+amt)<<16)+(c((n>>8&255)+amt)<<8)+c((n&255)+amt)).toString(16).slice(1)}
 const lum=h=>{const n=parseInt(hex(h).slice(1),16);return (n>>16)*.3+(n>>8&255)*.59+(n&255)*.11};
@@ -187,10 +216,9 @@ function renderPeople(){
   $("#personList").innerHTML=(S.peopleOk?S.people.map(p=>p.name):list.map(([n])=>n)).map(n=>`<option value="${esc(n)}">`).join("");
 }
 function filteredItems(ignoreCat){
-  const words=F.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   return S.items.filter(it=>{
-    const hay=[it.brand,it.name,it.person,showOf(it.showId).title,CATS[it.cat],it.scene,it.ep,it.platform].join(" ").toLowerCase();
-    return words.every(w=>hay.includes(w))&&(ignoreCat||!F.cat||it.cat===F.cat)&&(!F.show||it.showId===F.show)&&(!F.person||it.person===F.person);
+    const hay=[it.brand,it.name,it.person,showOf(it.showId).title,CATS[it.cat],it.scene,it.ep,it.platform].join(" ");
+    return hitQuery(F.q,hay)&&(ignoreCat||!F.cat||it.cat===F.cat)&&(!F.show||it.showId===F.show)&&(!F.person||it.person===F.person);
   }).sort(byNew);
 }
 function renderItems(){
@@ -308,7 +336,7 @@ function peopleData(){
 function renderPeoplePage(reset){
   if(reset||!peopleShown)peopleShown=peopleStep();
   const q=norm($("#peopleQ").value);
-  let list=peopleData().filter(p=>!q||norm(p.name).includes(q));
+  let list=peopleData().filter(p=>!q||hitWord(q,p.name));
   if(peopleSort==="name")list.sort((a,b)=>a.name.localeCompare(b.name,"ko"));
   else if(peopleSort==="recent")list.sort((a,b)=>b.latest.localeCompare(a.latest));
   else list.sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,"ko"));
@@ -567,7 +595,7 @@ function renderAdmin(){
   $$("#admTabs [data-tab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.tab===tab));
   $$("[data-panel]").forEach(p=>p.hidden=p.dataset.panel!==tab);
   const lq=norm($("#iListQ").value);
-  const ilist=[...S.items].sort(byNew).filter(it=>!lq||norm([it.brand,it.name,it.person,showOf(it.showId).title,it.ep].join(" ")).includes(lq));
+  const ilist=[...S.items].sort(byNew).filter(it=>!lq||hitQuery($("#iListQ").value,[it.brand,it.name,it.person,showOf(it.showId).title,it.ep].join(" ")));
   $("#iListCount").textContent=S.items.length?(lq?`찾은 아이템 ${ilist.length}개 / 전체 ${S.items.length}개`:`등록한 아이템 ${S.items.length}개`):"";
   $("#iList").innerHTML=!S.items.length?`<p class="empty">등록된 아이템이 없어요. 왼쪽에서 첫 아이템을 등록해 보세요.</p>`:!ilist.length?`<p class="empty">찾는 아이템이 없어요.</p>`:ilist.map(it=>`<div class="arow">${thumb(it)}
     <div style="min-width:0"><b>${esc(it.brand)} · ${esc(it.name)}</b><span>${esc([it.person,[showOf(it.showId).title||it.platform,it.ep].filter(Boolean).join(" ")||"프로그램 없음"].join(" · "))} · ${won(it.price)}${it.priceCheckFailed?" · <em class=\"warn\">가격 확인 실패</em>":it.priceCheckedAt?" · "+md(it.priceCheckedAt)+" 확인":""}</span></div>
