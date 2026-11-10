@@ -528,42 +528,119 @@ const REDIRECT_MSG="단축·제휴 링크예요. 내 제휴 링크라면 '내 �
 const SITE="https://wherefrom.store";
 const josa=(w,a,b)=>{const c=String(w||"").trim().slice(-1).charCodeAt(0);return w+(c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28?a:b)};
 const tagify=s=>String(s||"").replace(/[\s·〈〉()\[\]#,]/g,"");
+/* 블로그·인스타 글 만들기: 등록된 정보(방송, 인물, 브랜드, 가격, 구매처)만으로 글을 만들어요. 지어낸 내용은 넣지 않아요. */
+const VERIFY_TXT={official:"방송에 나온 제품과 같은 제품이에요.",similar:"똑같은 제품은 찾지 못해서, 가장 비슷한 제품을 골랐어요.",guess:"아직 확인 중인 정보예요. 확실해지면 사이트에서 바로 고쳐 둘게요."};
+/* 상품명이 너무 길면 제목용으로 줄여요 (품번 같은 영문·숫자 덩어리는 빼요) */
+const shortName=n=>{let s=String(n||"").replace(/\b(?=[A-Z0-9-]*\d)[A-Z0-9-]{6,}\b/g,"").replace(/\s{2,}/g," ").trim();return s.length>26?s.slice(0,26).replace(/\s\S*$/,""):s};
 function postFor(it){
   const sh=showOf(it.showId),show=sh.title||"",plat=show?sh.platform:it.platform,where=show||it.platform||"";
   const cat=CATS[it.cat]||"아이템",person=it.person||"",ep=it.ep||"";
   const fashion=["top","outer","bottom","dress","bag","hat","shoes","jewelry"].includes(it.cat);
   const verb=fashion?"착용한":it.cat==="food"?"먹은":"사용한";
   const links=buyLinks(it),aff=links.some(l=>l.aff),page=SITE+"/item/"+shortId(it.id)+"/";
-  const priceTxt=hasNum(it.price)?won(it.price)+(it.priceCheckedAt?` (${md(it.priceCheckedAt)} 기준)`:""):"가격 정보 없음";
+  const priced=links.filter(l=>hasNum(l.price)).sort((a,b)=>a.price-b.price),low=priced[0];
+  const when=it.priceCheckedAt?md(it.priceCheckedAt)+" 기준":"";
+  const off=hasNum(it.listPrice)&&hasNum(it.price)&&it.listPrice>it.price?Math.round((1-it.price/it.listPrice)*100):0;
   const src=[plat&&plat!=="기타"?plat:"",show?"〈"+show+"〉":"",ep].filter(Boolean).join(" ");
-  const title=(where?"["+where+"] ":"")+[person,cat,"어디꺼?",it.brand,"정보"].filter(Boolean).join(" ");
-  const intro=(show?show+(ep?" "+ep:"")+"에서 ":ep?ep+"에서 ":"")+(person?josa(person,"이","가")+" ":"")+verb+" "+cat+", 어디 건지 찾아봤어요.";
-  const AFF="이 글에는 제휴 링크가 있어요. 링크로 구매하면 어디꺼야?가 일정 수수료를 받을 수 있어요.";
-  const gray=t=>`<p><span style="color:#888888;font-size:13px">${esc(t)}</span></p>`;
-  const body=[
-    `<p>${esc(intro)}</p>`,
-    `<p><br></p><p style="text-align:center"><b>📷 [여기에 방송 캡처 넣기]</b></p>`,
-    src?`<p style="text-align:center"><span style="color:#888888;font-size:13px">출처: ${esc(src)}</span></p>`:"",
-    it.scene?`<p>${esc(it.scene)}</p>`:"",
-    `<p><br></p><h3>🔎 제품 정보</h3>`,
-    `<p><b>브랜드</b> ${esc(it.brand)}<br><b>상품명</b> ${esc(it.name)}<br><b>가격</b> ${esc(priceTxt)}</p>`,
-    links.length?`<p><b>구매처</b><br>${links.map(l=>`<a href="${esc(l.url)}">${esc(l.shop)}${hasNum(l.price)?" "+won(l.price):""}</a>`).join("<br>")}</p>`:"",
-    okUrl(it.imageUrl)?`<p><br></p><p style="text-align:center"><a href="${esc(page)}"><img src="${esc(page)}og.jpg" alt="${esc(it.brand+" "+it.name)}"></a></p><p style="text-align:center"><a href="${esc(page)}"><span style="color:#888888;font-size:13px">사진을 누르면 어디꺼야?에서 볼 수 있어요</span></a></p>`:"",
-    `<p><br></p><p>👉 <a href="${esc(page)}"><b>어디꺼야?에서 자세히 보기</b></a></p>`,
-    `<p>방송에 나온 다른 아이템도 <a href="${SITE}/">wherefrom.store</a>에서 찾아보세요.</p>`,
-    aff?`<p><br></p>`+gray(AFF):""
-  ].filter(Boolean).join("");
-  const text=[intro,"","📷 [여기에 방송 캡처 넣기]",src?"출처: "+src:"",it.scene||"","","🔎 제품 정보","브랜드 "+it.brand,"상품명 "+it.name,"가격 "+priceTxt,
-    ...(links.length?["","구매처",...links.map(l=>l.shop+(hasNum(l.price)?" "+won(l.price):"")+" "+l.url)]:[]),
-    "","👉 어디꺼야?에서 자세히 보기 "+page,aff?"\n"+AFF:""].join("\n").replace(/\n{3,}/g,"\n\n").trim();
-  const tags=[...new Set([show,person,it.brand,cat,person&&person+cat,fashion&&person&&person+"패션",fashion&&show&&show+"패션","방송아이템",fashion?"연예인패션":"연예인템","어디꺼야"].map(tagify).filter(Boolean))];
+  const who=person?josa(person,"이","가"):"";
+  const sname=shortName(it.name)||it.name;
+  const epS=ep.length<=12?ep:"",place=show?show+(epS?" "+epS:""):(epS||ep.slice(0,20)||plat||"");
+
+  /* 제목: 검색하는 말(방송, 인물, 분류, 브랜드, 상품명, 가격·구매처)을 한 줄에 */
+  const title=(place?"["+place+"] ":"")+[person,cat,"어디꺼?",it.brand,sname].filter(Boolean).join(" ")+" 가격·구매처 정리";
+  const intro=[(place?place+"에서 ":"")+(who?who+" ":"")+verb+" "+cat+", 어디 건지 궁금하셨죠?",
+    "정답은 "+josa(`${it.brand} ${it.name}`.trim(),"이에요","예요")+". 제품 정보, 가격, 구매처까지 한 번에 정리했어요."];
+
+  /* 본문 조각: [종류, 내용] → HTML과 글자만 버전을 같이 만들어요 */
+  const B=[];
+  B.push(["p",intro[0]],["p",intro[1]]);
+  B.push(["cap"]);
+  if(src)B.push(["src","출처: "+src]);
+
+  B.push(["h","1. "+(person?josa(person,"이","가")+" ":"")+verb+" "+cat+", 어떤 장면이었나요?"]);
+  B.push(["p",(place?place+"에서 ":"")+(who?who+" ":"")+verb+" "+josa(cat,"이에요.","예요.")+(it.sceneTime?` (${it.sceneTime} 즈음)`:"")]);
+  if(it.scene)B.push(["p",it.scene]);
+  B.push(["p",VERIFY_TXT[it.verify]||VERIFY_TXT.guess]);
+
+  B.push(["h","2. "+it.brand+" "+sname+" 제품 정보"]);
+  const rows=[["브랜드",it.brand],["제품명",it.name],["분류",cat],
+    hasNum(it.listPrice)&&off?["정가",won(it.listPrice)]:null,
+    hasNum(it.price)?["판매가",won(it.price)+(off?` (${off}% 할인)`:"")]:null,
+    hasNum(it.couponPrice)?["쿠폰 적용가",won(it.couponPrice)]:null,
+    low&&links.length>1?["최저가",won(low.price)+" ("+low.shop+")"]:null,
+    when?["가격 확인",when]:null,
+    src?["방송",src]:null,person?["인물",person]:null].filter(Boolean);
+  B.push(["table",rows]);
+  if(okUrl(it.imageUrl))B.push(["img"]);
+
+  if(links.length){
+    B.push(["h",links.length>1?"3. 어디서 사면 제일 쌀까요?":"3. 어디서 살 수 있나요?"]);
+    const ordered=[...priced,...links.filter(l=>!hasNum(l.price))];
+    B.push(["links",ordered]);
+    B.push(["note","가격은 할인·품절에 따라 바뀔 수 있어요. 사이트에서 매일 가격을 다시 확인해 최신 가격으로 고쳐 두고 있어요."]);
+  }
+
+  B.push(["h",(links.length?"4":"3")+". 자주 묻는 질문"]);
+  const qa=[];
+  qa.push([(person?person+(show?" "+show:"")+" ":"")+cat+" 어디 거예요?",josa(`${it.brand} ${it.name}`.trim(),"이에요.","예요.")+" "+(VERIFY_TXT[it.verify]||"")]);
+  if(hasNum(it.price)||low)qa.push(["가격은 얼마예요?",(when?when+" ":"")+(low&&links.length>1?`가장 싼 곳은 ${low.shop} ${won(low.price)}이에요.`:won(it.price)+"이에요.")+(off?` 정가 ${won(it.listPrice)}에서 ${off}% 할인된 가격이에요.`:"")]);
+  if(links.length)qa.push(["어디서 살 수 있어요?",[...new Set(links.map(l=>l.shop))].join(", ")+"에서 살 수 있어요. 위 구매처 링크로 바로 갈 수 있어요."]);
+  const rel=S.items.filter(x=>x.id!==it.id&&((person&&x.person===person)||(it.showId&&x.showId===it.showId))).sort(byNew).slice(0,3);
+  if(rel.length)qa.push([(person||show)+"의 다른 아이템도 있어요?",`네, 아래에 정리해 뒀어요.`]);
+  B.push(["qa",qa]);
+  if(rel.length)B.push(["rel",rel]);
+
+  B.push(["h",(links.length?"5":"4")+". 마무리"]);
+  B.push(["p",(place?place+"에 나온 ":"")+(who?who+" ":"")+verb+" "+josa(cat,"은","는")+" "+josa(`${it.brand} ${sname}`.trim(),"이었어요","였어요")+". 방송에 나온 다른 아이템이 궁금하면 언제든 어디꺼야?에서 찾아보세요."]);
+  B.push(["go"]);
+  if(aff)B.push(["aff","이 글에는 제휴 링크가 있어요. 링크로 구매하면 어디꺼야?가 일정 수수료를 받을 수 있어요."]);
+
+  /* HTML (네이버 글쓰기 화면에 붙여 넣기용) */
+  const gray=t=>`<span style="color:#888888;font-size:13px">${esc(t)}</span>`;
+  const cell="border:1px solid #dddddd;padding:8px 10px;font-size:14px";
+  const relUrl=x=>SITE+"/item/"+shortId(x.id)+"/";
+  const linkLine=l=>`${l.lowest?"⭐ ":""}<a href="${esc(l.url)}"><b>${esc(l.shop)}</b>${hasNum(l.price)?" "+won(l.price):""}</a>${l.lowest?" (최저가)":""}`;
+  const H={
+    p:t=>`<p>${esc(t)}</p>`,
+    cap:()=>`<p><br></p><p style="text-align:center"><b>📷 [여기에 방송 캡처 넣기]</b></p>`,
+    src:t=>`<p style="text-align:center">${gray(t)}</p>`,
+    h:t=>`<p><br></p><h3>${esc(t)}</h3>`,
+    table:r=>`<table style="border-collapse:collapse;width:100%">${r.map(([k,v])=>`<tr><td style="${cell};background:#f6f2ec;width:28%"><b>${esc(k)}</b></td><td style="${cell}">${esc(v)}</td></tr>`).join("")}</table>`,
+    img:()=>`<p><br></p><p style="text-align:center"><a href="${esc(page)}"><img src="${esc(page)}og.jpg" alt="${esc(it.brand+" "+it.name)}"></a></p><p style="text-align:center"><a href="${esc(page)}">${gray("사진을 누르면 어디꺼야?에서 볼 수 있어요")}</a></p>`,
+    links:ls=>`<p>${ls.map(linkLine).join("<br>")}</p>`,
+    note:t=>`<p>${gray(t)}</p>`,
+    qa:q=>q.map(([a,b])=>`<p><b>Q. ${esc(a)}</b><br>A. ${esc(b)}</p>`).join(""),
+    rel:r=>`<p>${r.map(x=>`👉 <a href="${esc(relUrl(x))}">${esc([x.person,x.brand,shortName(x.name)].filter(Boolean).join(" · "))}</a>`).join("<br>")}</p>`,
+    go:()=>`<p><br></p><p>👉 <a href="${esc(page)}"><b>어디꺼야?에서 ${esc(it.brand)} ${esc(sname)} 자세히 보기</b></a></p><p>방송에 나온 다른 아이템도 <a href="${SITE}/">wherefrom.store</a>에서 찾아보세요.</p>`,
+    aff:t=>`<p><br></p><p>${gray(t)}</p>`
+  };
+  const body=B.map(([k,v])=>H[k](v)).join("");
+
+  /* 글자만 (복사가 안 될 때) */
+  const T={
+    p:t=>t,cap:()=>"\n📷 [여기에 방송 캡처 넣기]",src:t=>t,h:t=>"\n"+t,
+    table:r=>r.map(([k,v])=>k+": "+v).join("\n"),img:()=>"",
+    links:ls=>ls.map(l=>(l.lowest?"⭐ ":"")+l.shop+(hasNum(l.price)?" "+won(l.price):"")+(l.lowest?" (최저가)":"")+" "+l.url).join("\n"),
+    note:t=>t,qa:q=>q.map(([a,b])=>"Q. "+a+"\nA. "+b).join("\n\n"),
+    rel:r=>r.map(x=>"👉 "+[x.person,x.brand,shortName(x.name)].filter(Boolean).join(" · ")+" "+relUrl(x)).join("\n"),
+    go:()=>"\n👉 어디꺼야?에서 자세히 보기 "+page,aff:t=>"\n"+t
+  };
+  const text=B.map(([k,v])=>T[k](v)).filter(s=>s!=="").join("\n").replace(/\n{3,}/g,"\n\n").trim();
+
+  /* 태그: 사람들이 검색하는 조합 위주 */
+  const tags=[...new Set([show,person,it.brand,cat,person&&person+cat,person&&show&&person+show,show&&show+cat,it.brand&&it.brand+cat,tagify(sname).length<=15&&sname,
+    person&&person+(fashion?"패션":"템"),fashion&&show&&show+"패션",it.brand&&it.brand+"가격",person&&cat+"어디꺼",
+    "방송아이템",fashion?"연예인패션":"연예인템","어디꺼야"].map(tagify).filter(Boolean))].slice(0,30);
   const igTags=[...new Set([...tags,person&&person+(fashion?"착용":"템"),it.brand&&tagify(it.brand)+"정보","연예인템","방송템","정보공유"].map(tagify).filter(Boolean))].slice(0,15);
   const caption=[
-    [where+(ep?" "+ep:""),person?josa(person,"이","가")+" "+verb+" "+cat:cat].filter(Boolean).join(" ")+" 👀","",
-    "✔️ "+it.brand,"✔️ "+it.name,"💰 "+priceTxt,links.length?"🛒 "+[...new Set(links.map(l=>l.shop))].join(" · "):"","",
+    [where+(ep?" "+ep:""),who?who+" "+verb+" "+cat:cat].filter(Boolean).join(" ")+" 👀","",
+    "✔️ "+it.brand,"✔️ "+it.name,
+    hasNum(it.price)?"💰 "+won(it.price)+(off?` (${off}% 할인)`:"")+(when?" · "+when:""):"",
+    low&&links.length>1?"⭐ 최저가 "+low.shop+" "+won(low.price):"",
+    links.length?"🛒 "+[...new Set(links.map(l=>l.shop))].join(" · "):"","",
     src?"📷 출처: "+src:"","더 많은 방송 아이템은 프로필 링크에서 👉 wherefrom.store",aff?"※ 제휴 링크로 구매하면 수수료를 받을 수 있어요.":"","",
     igTags.map(t=>"#"+t).join(" ")
-  ].join("\n").replace(/\n{3,}/g,"\n\n").trim();
+  ].filter((s,i,a)=>s!==""||a[i-1]!=="").join("\n").replace(/\n{3,}/g,"\n\n").trim();
   return {title,body,text,tags:tags.join(","),caption,og:page+"og.jpg",insta:page+"insta.jpg",hasImg:okUrl(it.imageUrl)};
 }
 let curPost=null;
